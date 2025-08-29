@@ -23,6 +23,7 @@ def handle_hello():
 
     return jsonify(response_body), 200
 
+
 @api.route('/user', methods=['POST'])
 def create_user():
 
@@ -66,3 +67,5 @@ def create_user():
     db.session.commit()
 
     return jsonify({"message": "Usuario creado exitosamente"}), 201
+
+
