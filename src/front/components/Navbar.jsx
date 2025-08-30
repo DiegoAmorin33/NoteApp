@@ -2,21 +2,23 @@ import { Link } from "react-router-dom";
 import NewNote from "./NewNote";
 
 export const Navbar = () => {
-
-	return (
-		<nav className="navbar navbar-light bg-light">
-			<div className="container d-flex">
-				<Link to="/">
-					<span className="navbar-brand mb-0 h1">React Boilerplate</span>
-				</Link>
-				<div className="ml-auto d-flex">
-					<Link to="/demo">
-						<button className="btn btn-primary">Check the Context in action</button>
-
-					</Link>
-					<NewNote/> {/* BOTON DE CREAR NUEVA NOTA-PAULO*/}
-				</div>
-			</div>
-		</nav>
-	);
+  return (
+    <header className="bg-light border-bottom">
+      <div className="container py-3">
+        <nav className="d-flex align-items-center justify-content-between">
+          <Link to="/" className="text-decoration-none text-dark">
+            <h1 className="m-0">Logo</h1>
+          </Link>
+          <div className="d-flex align-items-center gap-3">
+            <Link to="/about" className="nav-link text-secondary">about us</Link>
+            <Link to="/login" className="nav-link text-secondary">Log in</Link>
+            <Link to="/RegisterForm">
+              <button className="btn btn-dark">Sign up</button>
+            </Link>
+          </div>
+        </nav>
+        
+      </div>
+    </header>
+  );
 };

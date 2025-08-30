@@ -42,6 +42,9 @@ export const NewNote = () => {
     setContent("");
   };
 
+
+
+
   return (
     <div className="container">
       <button
@@ -89,6 +92,10 @@ export const NewNote = () => {
               />
 
               <p className="mt-2">Agrega unos tags</p>
+
+
+              <div class="btn-group" role="group" aria-label="Basic checkbox toggle button group">
+
               <div>
                 {availableTags.map((tag) => (
                   <button
@@ -100,6 +107,11 @@ export const NewNote = () => {
                   </button>
                 ))}
               </div>
+
+              </div>
+
+
+
             </div>
             <div className="modal-footer">
               <button

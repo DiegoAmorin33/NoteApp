@@ -23,17 +23,20 @@ const noteDetail = () => {
           reproduced in their exact original form, accompanied by English
           versions from the 1914 translation by H. Rackham.
         </p>
-         <div>
-                <button type="button" className="btn btn-outline-primary m-1">
-                  Tag 4
-                </button>
-              </div>
-
         <div>
-          <Comment/>
-          <Comment/>
-          <Comment/>
-          <Comment/>
+          <button type="button" className="btn btn-outline-primary m-1">
+            Tag 4
+          </button>
+        </div>
+        <div className="mb-3">
+          <label for="exampleFormControlTextarea1" class="form-label"><strong>Agregar un comentario </strong></label>
+          <textarea className="form-control" id="exampleFormControlTextarea1" rows="3" placeholder="En que estas pensando?"></textarea>
+        </div>
+        <div>
+          <Comment />
+          <Comment />
+          <Comment />
+          <Comment />
         </div>
       </div>
     </div>
