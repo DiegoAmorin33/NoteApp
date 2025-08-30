@@ -1,35 +1,36 @@
 import { useState } from "react";
-const comment = () => {
+
+const Comment = ({ commentData }) => {
   const [isClicked, setIsClicked] = useState(false);
   const handleIconClick = () => {
     setIsClicked(!isClicked);
   };
 
+  const { username, first_name, last_name, content, created_at } = commentData;
+  const formattedDate = new Date(created_at).toLocaleString();
+
   return (
     <div className="bg-white rounded-strong d-flex mt-3">
-      <img
-        src="https://media.istockphoto.com/id/1386479313/es/foto/feliz-mujer-de-negocios-afroamericana-millennial-posando-aislada-en-blanco.jpg?s=612x612&w=0&k=20&c=JP0NBxlxG2-bdpTRPlTXBbX13zkNj0mR5g1KoOdbtO4="
-        alt="foto de perfil"
-        className="foto-circular rounded-circle m-auto mx-2"
-      />
-      <div>
-        <h4>Nombre de usuario</h4>
-        <p className="mx-2 interlineado-compacto ">
-          Texto del comentario: Lorem Ipsum is simply dummy text of the printing
-          and typesetting industry. Lorem Ipsum has been the industry's standard
-          dummy text ever since the 1500s, when an unknown printer took a galley
-          of type and scrambled it to make a type specimen book. It has survived
-          not only five centuries, but also the leap into electronic
-          typesetting, remaining essentially unchanged.
+      <div className="d-flex flex-column align-items-start justify-content-center mx-2">
+        <h4 className="mb-0">{username}</h4>
+        <p className="text-muted mb-0" style={{ fontSize: '0.8rem' }}>
+          {first_name} {last_name}
+        </p>
+        <p className="text-muted" style={{ fontSize: '0.8rem' }}>
+          {formattedDate}
         </p>
       </div>
-      {/* uso un controlador ternario para el color del icono */}
+      <div className="flex-grow-1 mx-2">
+        <p className="interlineado-compacto">
+          {content}
+        </p>
+      </div>
       <i
         onClick={handleIconClick}
-       className={`icono fa-solid fa-heart fa-xl m-auto me-3 ${isClicked ? 'icono-activo' : ''}`}
+        className={`icono fa-solid fa-heart fa-xl m-auto me-3 ${isClicked ? 'icono-activo' : ''}`}
       ></i>
     </div>
   );
 };
 
-export default comment;
+export default Comment;

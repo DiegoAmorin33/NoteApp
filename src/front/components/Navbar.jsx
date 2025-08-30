@@ -15,9 +15,10 @@ export const Navbar = () => {
             <Link to="/RegisterForm">
               <button className="btn btn-dark">Sign up</button>
             </Link>
+            <NewNote />
           </div>
         </nav>
-        
+
       </div>
     </header>
   );

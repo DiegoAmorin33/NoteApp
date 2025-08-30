@@ -1,6 +1,76 @@
+import React, { useState, useEffect } from "react";
 import Comment from "../components/Comment";
 
 const noteDetail = () => {
+  const [commentText, setCommentText] = useState("");
+  const [comments, setComments] = useState([]);
+  const noteId = 1;
+
+  useEffect(() => {
+    const fetchComments = async () => {
+      try {
+        const response = await fetch(`https://supreme-space-chainsaw-r4wwrjwvrwxj2ww-3001.app.github.dev/api/notes/${noteId}/comments`);
+        if (response.ok) {
+          const data = await response.json();
+          setComments(data);
+        } else {
+          console.error("Error al obtener los comentarios.");
+        }
+      } catch (error) {
+        console.error("Error en la conexión:", error);
+      }
+    };
+    fetchComments();
+  }, [noteId]);
+
+  const handleCommentChange = (e) => {
+    setCommentText(e.target.value);
+  };
+
+  const handlePostComment = async () => {
+    const token = localStorage.getItem("token");
+
+    if (!token) {
+      alert("Debes iniciar sesión para comentar.");
+      return;
+    }
+    if (!commentText.trim()) {
+      alert("El comentario no puede estar vacío.");
+      return;
+    }
+
+    const commentData = {
+      comment: commentText,
+    };
+
+    try {
+      const response = await fetch(`https://supreme-space-chainsaw-r4wwrjwvrwxj2ww-3001.app.github.dev/api/notes/${noteId}/comments`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${token}`,
+        },
+        body: JSON.stringify(commentData),
+      });
+
+      if (response.ok) {
+        const newComment = await response.json();
+        setComments([...comments, newComment]);
+        setCommentText("");
+        alert("Comentario publicado exitosamente.");
+      } else {
+        const errorData = await response.json();
+        alert(`Error al publicar el comentario: ${errorData.msg}`);
+      }
+    } catch (error) {
+      console.error("Error en la conexión:", error);
+      alert("Ocurrió un error inesperado.");
+    }
+  };
+
+  //esto debe de ser el texto de la nota publicada, la cual deberia de abrirse la hacer
+  // clic en la miniatura de la nota en el perfil, pero esa historia no se ha agregado#
+
   return (
     <div className="row">
       <div className="col-6 m-auto bg-danger-subtle rounded-strong">
@@ -29,14 +99,25 @@ const noteDetail = () => {
           </button>
         </div>
         <div className="mb-3">
-          <label for="exampleFormControlTextarea1" class="form-label"><strong>Agregar un comentario </strong></label>
-          <textarea className="form-control" id="exampleFormControlTextarea1" rows="3" placeholder="En que estas pensando?"></textarea>
+          <label htmlFor="exampleFormControlTextarea1" className="form-label">
+            <strong>Agregar un comentario</strong>
+          </label>
+          <textarea
+            className="form-control"
+            id="exampleFormControlTextarea1"
+            rows="3"
+            placeholder="En que estas pensando?"
+            value={commentText}
+            onChange={handleCommentChange}
+          ></textarea>
+          <button onClick={handlePostComment} className="btn btn-primary mt-2">
+            Publicar
+          </button>
         </div>
         <div>
-          <Comment />
-          <Comment />
-          <Comment />
-          <Comment />
+          {comments.map((c) => (
+            <Comment key={c.comment_id} commentData={c} />
+          ))}
         </div>
       </div>
     </div>

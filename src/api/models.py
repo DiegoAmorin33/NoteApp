@@ -72,6 +72,19 @@ class Comments (db.Model):
     notifications = db.relationship("Notifications", backref="comment", cascade="all, delete-orphan")
     votes = db.relationship("Votes", backref="comment", cascade="all, delete-orphan")
 
+#para facilitar el acceso desde el front
+    def serialize(self):
+        return {
+            "comment_id": self.comment_id,
+            "note_id": self.note_id,
+            "user_id": self.user_id,
+            "content": self.content,
+            "created_at": self.created_at,
+            "username": self.user.username,
+            "first_name": self.user.first_name,
+            "last_name": self.user.last_name
+        }
+
 class Tags(db.Model):
     tag_id: Mapped[int] = mapped_column(primary_key=True)
     name: Mapped[str] = mapped_column(String(50), unique=True, nullable=False)
