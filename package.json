@@ -36,11 +36,7 @@
 		"eslint-plugin-react": "^7.33.1",
 		"eslint-plugin-react-hooks": "^4.6.0",
 		"eslint-plugin-react-refresh": "^0.4.3",
-
 		"vite": "^4.4.8"
-
-		
-
 	},
 	"babel": {
 		"presets": [
@@ -58,9 +54,7 @@
 		]
 	},
 	"dependencies": {
-		"@fortawesome/fontawesome-svg-core": "^7.0.0",
-		"@fortawesome/free-solid-svg-icons": "^7.0.0",
-		"@fortawesome/react-fontawesome": "^3.0.1",
+
 		"bootstrap": "^5.3.8",
 		"prop-types": "^15.8.1",
 		"react": "^18.2.0",
