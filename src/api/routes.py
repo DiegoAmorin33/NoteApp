@@ -1,5 +1,5 @@
 from flask import Flask, request, jsonify, url_for, Blueprint
-from api.models import db, User, Notes, Tags
+from api.models import db, User, Notes, Tags, Comments
 from api.utils import generate_sitemap, APIException
 from flask_cors import CORS
 from flask_bcrypt import Bcrypt
@@ -171,8 +171,8 @@ def create_user():
         is_active=True
     )
 
-    hashed_password = bcrypt.generate_password_hash(password)
-    User.password = hashed_password
+    #hashed_password = bcrypt.generate_password_hash(password)
+    #User.password = hashed_password
 
     db.session.add(new_user)
     db.session.commit()
@@ -229,7 +229,9 @@ def create_token():
     if not bcrypt.check_password_hash(user.password_hash, password):
         return jsonify({"error": "Email o contraseña invalida"}), 401
     
+    print(f"ID del usuario para crear el token: {user.id}")
     access_token = create_access_token(identity=user.id)
+    print(f"Token generado: {access_token}")
     
     return jsonify(access_token=access_token)
 
@@ -255,4 +257,19 @@ def get_comments(note_id):
     comments_list = [comment.serialize() for comment in note.comments]
     
     return jsonify(comments_list), 200
+
+
+    #endpoint para perfil
+
+
+@api.route('/profile', methods=['GET'])
+@jwt_required() 
+def get_profile():
+    current_user_id = get_jwt_identity()
+    user = User.query.get(current_user_id)
+
+    if user is None:
+        return jsonify({"error": "Usuario no encontrado"}), 404
+    
+    return jsonify(id=user.id, username=user.username, first_name=user.first_name, last_name=user.last_name, email=user.email)
 
