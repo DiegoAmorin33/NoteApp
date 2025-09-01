@@ -22,8 +22,6 @@ def handle_hello():
     return jsonify(response_body), 200
 
 # PAULO Endpoint para crear un nuevo tag
-
-
 @api.route('/tags', methods=['POST'])
 def create_tag():
     body = request.get_json()
@@ -46,8 +44,6 @@ def create_tag():
         return jsonify({"msg": f"Error creating tag: {str(e)}"}), 500
 
 # PAULO Endpoint para ver todos los tags
-
-
 @api.route('/tags', methods=['GET'])
 def get_tags():
     all_tags = Tags.query.all()
@@ -120,7 +116,6 @@ def create_note():
         "tags": [tag.name for tag in new_note.tags]
     }), 201
 
-
 @api.route('/user', methods=['POST'])
 def create_user():
 
@@ -164,8 +159,6 @@ def create_user():
     return jsonify({"message": "Usuario creado exitosamente"}), 201
 
 # Endpoint para obtener todos los usuarios
-
-
 @api.route('/users', methods=['GET'])
 def get_all_users():
     all_users = User.query.all()
