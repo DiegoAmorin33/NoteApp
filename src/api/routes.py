@@ -240,17 +240,6 @@ def create_token():
     if not bcrypt.check_password_hash(user.password_hash, password):
         return jsonify({"error": "Email o contraseña invalida"}), 401
 
-    access_token = create_access_token(identity=user.id)
+    access_token = create_access_token(identity=str(user.id))
 
     return jsonify(access_token=access_token)
-
-
-# PAULO Endpoint para obtener todos los comentarios de una nota
-@api.route('/notes/<int:note_id>/comments', methods=['GET'])
-def get_comments(note_id):
-    note = Notes.query.get(note_id)
-    if not note:
-        return jsonify({"msg": "La nota no existe."}), 404
-    comments_list = [comment.serialize() for comment in note.comments]
-
-    return jsonify(comments_list), 200
