@@ -3,7 +3,9 @@ from api.models import db, User, Notes, Tags
 from api.utils import generate_sitemap, APIException
 from flask_cors import CORS
 from flask_bcrypt import Bcrypt
+from flask_jwt_extended import create_access_token
 from flask_jwt_extended import jwt_required, get_jwt_identity
+
 
 api = Blueprint('api', __name__)
 bcrypt = Bcrypt()
@@ -143,12 +145,13 @@ def create_user():
     if User.query.filter_by(username=username).first():
         return jsonify({"error": "El nombre de usuario ya está en uso"}), 400
 
-    # hashed_password = bcrypt.generate_password_hash(password).decode('utf-8')
 
+    hashed_password = bcrypt.generate_password_hash(password).decode('utf-8')
+    
     new_user = User(
         email=email,
-        password_hash=password,
-        # password_hash=hashed_password,
+        #password_hash=password,
+        password_hash=hashed_password,
         first_name=first_name,
         last_name=last_name,
         username=username,
@@ -194,6 +197,27 @@ def create_comment(note_id):
         note_id=note_id
     )
 
+
+
+@api.route('/token', methods=['POST'])
+def create_token():
+    
+    email = request.json.get("email", None)
+    password = request.json.get("password", None)
+
+    
+    user = User.query.filter_by(email=email).first()
+
+    if user is None:
+        return jsonify({"error": "Email o contraseña invalida"}), 401
+
+    if not bcrypt.check_password_hash(user.password_hash, password):
+        return jsonify({"error": "Email o contraseña invalida"}), 401
+    
+    access_token = create_access_token(identity=user.id)
+    
+    return jsonify(access_token=access_token)
+
     db.session.add(new_comment)
     try:
         db.session.commit()
@@ -216,3 +240,4 @@ def get_comments(note_id):
     comments_list = [comment.serialize() for comment in note.comments]
     
     return jsonify(comments_list), 200
+
