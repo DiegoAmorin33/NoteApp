@@ -4,14 +4,16 @@ from api.utils import generate_sitemap, APIException
 from flask_cors import CORS
 from flask_bcrypt import Bcrypt
 from flask_jwt_extended import create_access_token
+from flask_jwt_extended import create_access_token
 from flask_jwt_extended import jwt_required, get_jwt_identity
+
 
 
 api = Blueprint('api', __name__)
 bcrypt = Bcrypt()
 
-# Allow CORS requests to this API
-CORS(api)
+# Permite solicitudes de CORS a esta API
+CORS(api, resources={r"/api/*": {"origins": "*"}})
 
 
 @api.route('/hello', methods=['POST', 'GET'])
@@ -61,8 +63,9 @@ def get_tags():
         })
     return jsonify(serialized_tags), 200
 
-
 # PAULO Endpoint para obtener todas las notas
+
+
 @api.route('/notes', methods=['GET'])
 def get_notes():
     all_notes = Notes.query.all()
@@ -76,15 +79,26 @@ def get_notes():
 
     return jsonify(serialized_notes), 200
 
+# PAULO Endpoint para obtener todos los comentarios de una nota
+
+
+@api.route('/notes/<int:note_id>/comments', methods=['GET'])
+def get_comments(note_id):
+    note = Notes.query.get(note_id)
+    if not note:
+        return jsonify({"msg": "La nota no existe."}), 404
+    comments_list = [comment.serialize() for comment in note.comments]
+
+    return jsonify(comments_list), 200
 
 # PAULO Endpoint para crear una nueva nota
 @api.route('/notes', methods=["POST"])
-@jwt_required()
+@jwt_required() 
 def create_note():
     current_user_id = get_jwt_identity()
-
     body = request.get_json()
-    required_fields = ['title', 'content', 'is_anonymous', 'tags']
+    print("Datos recibidos del frontend:", body)
+    required_fields = ['title', 'content', 'tags']
     if not all(field in body for field in required_fields):
         return jsonify({"msg": "Missing required fields"}), 400
 
@@ -97,7 +111,7 @@ def create_note():
         title=body.get('title'),
         content=body.get('content'),
         user_id=current_user_id,
-        is_anonymous=body.get('is_anonymous')
+        is_anonymous=False,
     )
 
     try:
@@ -118,7 +132,6 @@ def create_note():
         "title": new_note.title,
         "content": new_note.content,
         "user_id": new_note.user_id,
-        "is_anonymous": new_note.is_anonymous,
         "tags": [tag.name for tag in new_note.tags]
     }), 201
 
@@ -178,6 +191,8 @@ def get_all_users():
     return jsonify(serialized_users), 200
 
 # PAULO Endpoint para crear un nuevo comentario en una nota
+
+
 @api.route('/notes/<int:note_id>/comments', methods=["POST"])
 @jwt_required()
 def create_comment(note_id):
@@ -191,8 +206,8 @@ def create_comment(note_id):
     if not note:
         return jsonify({"msg": "La nota no existe."}), 404
 
-    new_comment = Comment(
-        comment=comment_text,
+    new_comment = Comments(
+        content=comment_text,
         user_id=current_user_id,
         note_id=note_id
     )

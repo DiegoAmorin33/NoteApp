@@ -59,7 +59,7 @@ export const NewNote = () => {
 
   const publishNote = async () => {
     // la recomendacion es que se use global reducer, pero lo vi muy complicado y lo deje asi
-    const token = localStorage.getItem("token");
+    const token = sessionStorage.getItem("token");
 
     // Verificamos que exista una sesion iniciada
     if (!token) {
@@ -75,7 +75,6 @@ export const NewNote = () => {
     const noteData = {
       title: title,
       content: content,
-      is_anonymous: false,
       tags: [selectedTag], 
     };
 
