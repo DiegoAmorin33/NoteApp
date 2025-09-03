@@ -6,36 +6,80 @@ export const NewNote = () => {
   const textareaRef = useRef(null);
   const [availableTags, setAvailableTags] = useState([]);
   const [title, setTitle] = useState("");
-  const [selectedTag, setSelectedTag] = useState(null);
+  const [selectedTags, setSelectedTags] = useState([]);
   const [showLoginErrorModal, setShowLoginErrorModal] = useState(false);
+  const [newTagName, setNewTagName] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
 
-  // Hook para obtener los tags de la API al cargar el componente
+  const backendUrl = "https://glorious-cod-5g5ggj5wjj7whv5qp-3001.app.github.dev/";
+
+  const mainModalRef = useRef(null);
+  const tagModalRef = useRef(null);
+  const loginModalRef = useRef(null);
+
   useEffect(() => {
-    const fetchTags = async () => {
-      try {
-        const response = await fetch("https://supreme-space-chainsaw-r4wwrjwvrwxj2ww-3001.app.github.dev/api/tags");
-        if (response.ok) {
-          const data = await response.json();
-          setAvailableTags(data);
-        } else {
-          console.error("Error al obtener los tags.");
-        }
-      } catch (error) {
-        console.error("Error en la conexión:", error);
-      }
-    };
     fetchTags();
+    if (mainModalRef.current) {
+      new window.bootstrap.Modal(mainModalRef.current);
+    }
+    if (tagModalRef.current) {
+      new window.bootstrap.Modal(tagModalRef.current);
+    }
+    if (loginModalRef.current) {
+      new window.bootstrap.Modal(loginModalRef.current);
+    }
   }, []);
 
-  // Hook para ajustar el tamaño del textarea cuando cambia el contenido
+  const fetchTags = async () => {
+    try {
+      const response = await fetch(`${backendUrl}api/tags`);
+      if (response.ok) {
+        const data = await response.json();
+        setAvailableTags(data);
+      } else {
+        console.error("Error al obtener los tags.");
+      }
+    } catch (error) {
+      console.error("Error en la conexión:", error);
+    }
+  };
+
   useEffect(() => {
     if (textareaRef.current) {
       textareaRef.current.style.height = "auto";
-      textareaRef.current.style.height =
-        textareaRef.current.scrollHeight + "px";
+      textareaRef.current.style.height = textareaRef.current.scrollHeight + "px";
     }
   }, [content]);
 
+  const showMainModal = () => {
+    const modal = new window.bootstrap.Modal(mainModalRef.current);
+    modal.show();
+  };
+
+  const hideMainModal = () => {
+    const modal = window.bootstrap.Modal.getInstance(mainModalRef.current);
+    if (modal) modal.hide();
+  };
+
+  const showTagModal = () => {
+    const modal = new window.bootstrap.Modal(tagModalRef.current);
+    modal.show();
+  };
+
+  const hideTagModal = () => {
+    const modal = window.bootstrap.Modal.getInstance(tagModalRef.current);
+    if (modal) modal.hide();
+  };
+
+  const showLoginModal = () => {
+    const modal = new window.bootstrap.Modal(loginModalRef.current);
+    modal.show();
+  };
+
+  const hideLoginModal = () => {
+    const modal = window.bootstrap.Modal.getInstance(loginModalRef.current);
+    if (modal) modal.hide();
+  };
 
   const handleContentChange = (e) => {
     setContent(e.target.value);
@@ -46,41 +90,96 @@ export const NewNote = () => {
   };
 
   const handleTagClick = (tagName) => {
-    setSelectedTag(tagName === selectedTag ? null : tagName);
+    setSelectedTags(prev => {
+      if (prev.includes(tagName)) {
+        return prev.filter(tag => tag !== tagName);
+      } else {
+        return [...prev, tagName];
+      }
+    });
+  };
+
+  const removeTag = (tagNameToRemove) => {
+    setSelectedTags(prev => prev.filter(tag => tag !== tagNameToRemove));
   };
 
   const handleClose = () => {
     setContent("");
     setTitle("");
-    setSelectedTag(null);
-    setShowLoginErrorModal(false);
+    setSelectedTags([]);
+    setNewTagName("");
+    hideMainModal();
   };
 
-
-  const publishNote = async () => {
-    // la recomendacion es que se use global reducer, pero lo vi muy complicado y lo deje asi
-    const token = localStorage.getItem("token");
-
-    // Verificamos que exista una sesion iniciada
-    if (!token) {
-      setShowLoginErrorModal(true);
+  const createNewTag = async () => {
+    if (!newTagName.trim()) {
+      alert("El nombre del tag no puede estar vacío");
       return;
     }
 
-    if (!selectedTag) {
+    const token = sessionStorage.getItem("token");
+    if (!token) {
+      hideTagModal();
+      showLoginModal();
+      return;
+    }
+
+    setIsLoading(true);
+    try {
+      const response = await fetch(`${backendUrl}api/tags`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${token}`
+        },
+        body: JSON.stringify({ name: newTagName.trim() }),
+      });
+
+      if (response.ok) {
+        const newTag = await response.json();
+        setAvailableTags(prev => [...prev, newTag]);
+        setSelectedTags(prev => [...prev, newTag.name]);
+        setNewTagName("");
+        hideTagModal();
+      } else {
+        const errorData = await response.json();
+        alert(`Error creando tag: ${errorData.msg || errorData.error}`);
+      }
+    } catch (error) {
+      console.error("Error creando tag:", error);
+      alert("Error al crear el tag");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const publishNote = async () => {
+    const token = sessionStorage.getItem("token");
+    if (!token) {
+      showLoginModal();
+      return;
+    }
+
+    if (selectedTags.length === 0) {
       alert("Debes seleccionar al menos un tag para publicar la nota.");
       return;
     }
 
+    if (!title.trim() || !content.trim()) {
+      alert("El título y contenido son obligatorios");
+      return;
+    }
+
     const noteData = {
-      title: title,
-      content: content,
+      title: title.trim(),
+      content: content.trim(),
       is_anonymous: false,
-      tags: [selectedTag], 
+      tags: selectedTags,
     };
 
+    setIsLoading(true);
     try {
-      const response = await fetch("https://supreme-space-chainsaw-r4wwrjwvrwxj2ww-3001.app.github.dev/api/notes", {
+      const response = await fetch(`${backendUrl}api/notes`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -91,21 +190,16 @@ export const NewNote = () => {
 
       if (response.ok) {
         alert("¡Nota publicada exitosamente!");
-        const modalElement = document.getElementById("exampleModal");
-        if (modalElement) {
-          const modal = window.bootstrap.Modal.getInstance(modalElement);
-          if (modal) {
-            modal.hide();
-          }
-        }
-        handleClose(); // Reseteamos los inputs
+        handleClose();
       } else {
         const errorData = await response.json();
-        alert(`Error al publicar la nota: ${errorData.msg}`);
+        alert(`Error al publicar: ${errorData.msg || errorData.error}`);
       }
     } catch (error) {
-      console.error("Error en la conexión:", error);
-      alert("Ocurrió un error inesperado.");
+      console.error("Error publicando nota:", error);
+      alert("Error de conexión");
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -114,108 +208,180 @@ export const NewNote = () => {
       <button
         type="button"
         className="btn btn-primary"
-        data-bs-toggle="modal"
-        data-bs-target="#exampleModal"
+        onClick={showMainModal}
       >
         NEW NOTE!
       </button>
 
-      {/* Modal para crear una nota */}
-      <div
-        className="modal fade"
-        id="exampleModal"
-        tabIndex="-1"
-        aria-labelledby="exampleModalLabel"
-        aria-hidden="true"
-      >
-        <div className="modal-dialog">
+      <div className="modal fade" ref={mainModalRef} tabIndex="-1" aria-labelledby="exampleModalLabel" aria-hidden="true">
+        <div className="modal-dialog modal-lg">
           <div className="modal-content">
             <div className="modal-header">
-              <h1 className="modal-title fs-5" id="exampleModalLabel">
-                Que deseas publicar?
-              </h1>
-              <button
-                type="button"
-                className="btn-close"
-                data-bs-dismiss="modal"
-                aria-label="Close"
-              ></button>
+              <h1 className="modal-title fs-5" id="exampleModalLabel">¿Qué deseas publicar?</h1>
+              <button type="button" className="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
+            
             <div className="modal-body">
               <input
                 type="text"
-                placeholder="Escribe el titulo de tu nota"
-                className="form-control form-control-lg mb-1"
+                placeholder="Título de tu nota"
+                className="form-control form-control-lg mb-3"
                 value={title}
                 onChange={handleTitleChange}
               />
+              
               <textarea
                 ref={textareaRef}
-                className="form-control form-control-lg"
-                rows="1"
-                placeholder="que quieres compartir?"
+                className="form-control form-control-lg mb-3"
+                rows="3"
+                placeholder="¿Qué quieres compartir?"
                 value={content}
                 onChange={handleContentChange}
-                style={{ resize: "none", overflow: "hidden" }}
+                style={{ resize: "none", minHeight: "120px" }}
               />
 
-              <p className="mt-2">Agrega un tag</p>
+              {selectedTags.length > 0 && (
+                <div className="mb-3">
+                  <label className="form-label">Tags seleccionados:</label>
+                  <div className="d-flex flex-wrap gap-2">
+                    {selectedTags.map((tagName) => (
+                      <span key={tagName} className="badge bg-primary d-flex align-items-center">
+                        {tagName}
+                        <button
+                          type="button"
+                          className="btn-close btn-close-white ms-2"
+                          style={{ fontSize: '0.6rem' }}
+                          onClick={() => removeTag(tagName)}
+                          aria-label="Remover tag"
+                        ></button>
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              )}
 
-              <div className="btn-group" role="group" aria-label="Basic checkbox toggle button group">
-                <div>
+              <div className="mb-3">
+                <div className="d-flex justify-content-between align-items-center mb-2">
+                  <label className="form-label mb-0">Selecciona tags:</label>
+                  <button 
+                    type="button" 
+                    className="btn btn-sm btn-outline-secondary"
+                    onClick={showTagModal}
+                  >
+                    + Crear nuevo tag
+                  </button>
+                </div>
+
+                <div className="d-flex flex-wrap gap-2">
                   {availableTags.map((tag) => (
                     <button
-                      key={tag.tag_id}
+                      key={tag.tag_id || tag.id}
                       type="button"
-                      className={`btn m-1 ${selectedTag === tag.name ? 'btn-primary' : 'btn-outline-primary'}`}
+                      className={`btn ${selectedTags.includes(tag.name) ? 'btn-primary' : 'btn-outline-primary'}`}
                       onClick={() => handleTagClick(tag.name)}
                     >
                       {tag.name}
+                      {selectedTags.includes(tag.name) && ' ✓'}
                     </button>
                   ))}
+                  
+                  {availableTags.length === 0 && (
+                    <div className="text-muted">
+                      No hay tags disponibles. <button 
+                        type="button" 
+                        className="btn btn-link p-0"
+                        onClick={showTagModal}
+                      >
+                        Crear el primer tag
+                      </button>
+                    </div>
+                  )}
                 </div>
               </div>
             </div>
+
             <div className="modal-footer">
-              <button
-                type="button"
-                className="btn btn-secondary"
+              <button 
+                type="button" 
+                className="btn btn-secondary" 
                 data-bs-dismiss="modal"
-                onClick={handleClose}
               >
                 Cancelar
               </button>
-              <button
-                type="button"
-                className="btn btn-primary"
+              <button 
+                type="button" 
+                className="btn btn-primary" 
                 onClick={publishNote}
+                disabled={isLoading || selectedTags.length === 0 || !title.trim() || !content.trim()}
               >
-                Publicar
+                {isLoading ? 'Publicando...' : 'Publicar'}
               </button>
             </div>
           </div>
         </div>
       </div>
 
-      {/*Modal de error para el inicio de sesión */}
-      {showLoginErrorModal && (
-        <div className="modal fade show" style={{ display: 'block' }} tabIndex="-1">
-          <div className="modal-dialog">
-            <div className="modal-content">
-              <div className="modal-header">
-                <h5 className="modal-title">Error de Autenticación</h5>
-                <button type="button" className="btn-close" onClick={() => setShowLoginErrorModal(false)}></button>
-              </div>
-              <div className="modal-body">
-                <p>Debes iniciar sesión para poder publicar notas.</p>
-              </div>
-              <div className="modal-footer">
-                <button type="button" className="btn btn-secondary" onClick={() => setShowLoginErrorModal(false)}>Cerrar</button>
-              </div>
+      <div className="modal fade" ref={tagModalRef} tabIndex="-1" aria-labelledby="tagModalLabel" aria-hidden="true">
+        <div className="modal-dialog">
+          <div className="modal-content">
+            <div className="modal-header">
+              <h5 className="modal-title" id="tagModalLabel">Crear nuevo tag</h5>
+              <button type="button" className="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div className="modal-body">
+              <input
+                type="text"
+                className="form-control"
+                placeholder="Nombre del nuevo tag"
+                value={newTagName}
+                onChange={(e) => setNewTagName(e.target.value)}
+                onKeyPress={(e) => e.key === 'Enter' && createNewTag()}
+                autoFocus
+              />
+            </div>
+            <div className="modal-footer">
+              <button 
+                type="button" 
+                className="btn btn-secondary" 
+                data-bs-dismiss="modal"
+              >
+                Cancelar
+              </button>
+              <button 
+                type="button" 
+                className="btn btn-primary" 
+                onClick={createNewTag}
+                disabled={isLoading || !newTagName.trim()}
+              >
+                {isLoading ? 'Creando...' : 'Crear tag'}
+              </button>
             </div>
           </div>
         </div>
-      )}
+      </div>
+
+      <div className="modal fade" ref={loginModalRef} tabIndex="-1" aria-labelledby="loginModalLabel" aria-hidden="true">
+        <div className="modal-dialog">
+          <div className="modal-content">
+            <div className="modal-header">
+              <h5 className="modal-title" id="loginModalLabel">Error de Autenticación</h5>
+              <button type="button" className="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div className="modal-body">
+              <p>Debes iniciar sesión para poder publicar notas y crear tags.</p>
+            </div>
+            <div className="modal-footer">
+              <button 
+                type="button" 
+                className="btn btn-secondary" 
+                data-bs-dismiss="modal"
+              >
+                Cerrar
+              </button>
+            </div>
+          </div>
+        </div> 
+      </div>
     </div>
   );
 };

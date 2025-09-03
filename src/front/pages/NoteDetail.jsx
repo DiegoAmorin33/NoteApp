@@ -1,34 +1,68 @@
 import React, { useState, useEffect } from "react";
-import Comment from "../components/Comment";
+import { useParams } from "react-router-dom";
 
-const noteDetail = () => {
+const NoteDetail = () => {
   const [commentText, setCommentText] = useState("");
   const [comments, setComments] = useState([]);
-  const noteId = 1;
+  const [editingCommentId, setEditingCommentId] = useState(null);
+  const [editedContent, setEditedContent] = useState("");
+  const [note, setNote] = useState(null);
+  const [loading, setLoading] = useState(true);
+  
+  const { id } = useParams();
+  const backendUrl = import.meta.env.VITE_BACKEND_URL;
 
   useEffect(() => {
-    const fetchComments = async () => {
+    const fetchNoteAndComments = async () => {
       try {
-        const response = await fetch(`https://supreme-space-chainsaw-r4wwrjwvrwxj2ww-3001.app.github.dev/api/notes/${noteId}/comments`);
-        if (response.ok) {
-          const data = await response.json();
-          setComments(data);
+        setLoading(true);
+        
+        console.log("Fetching note with ID:", id);
+        
+        const noteResponse = await fetch(`${backendUrl}api/notes/${id}`);
+        console.log("Note response status:", noteResponse.status);
+        
+        if (noteResponse.ok) {
+          const noteData = await noteResponse.json();
+          console.log("Note data:", noteData);
+          setNote(noteData);
         } else {
-          console.error("Error al obtener los comentarios.");
+          console.error("Error al obtener la nota:", noteResponse.status);
+          if (noteResponse.status === 404) {
+            alert("La nota no existe.");
+          }
+          return;
+        }
+        
+        const commentsResponse = await fetch(`${backendUrl}api/notes/${id}/comments`);
+        console.log("Comments response status:", commentsResponse.status);
+        
+        if (commentsResponse.ok) {
+          const commentsData = await commentsResponse.json();
+          console.log("Comments data:", commentsData);
+          setComments(commentsData);
+        } else {
+          console.error("Error al obtener los comentarios:", commentsResponse.status);
         }
       } catch (error) {
         console.error("Error en la conexión:", error);
+        alert("Error de conexión con el servidor.");
+      } finally {
+        setLoading(false);
       }
     };
-    fetchComments();
-  }, [noteId]);
+    
+    if (id) {
+      fetchNoteAndComments();
+    }
+  }, [id, backendUrl]);
 
   const handleCommentChange = (e) => {
     setCommentText(e.target.value);
   };
 
   const handlePostComment = async () => {
-    const token = localStorage.getItem("token");
+    const token = sessionStorage.getItem("token");
 
     if (!token) {
       alert("Debes iniciar sesión para comentar.");
@@ -44,7 +78,8 @@ const noteDetail = () => {
     };
 
     try {
-      const response = await fetch(`https://supreme-space-chainsaw-r4wwrjwvrwxj2ww-3001.app.github.dev/api/notes/${noteId}/comments`, {
+      console.log("Posting comment to note ID:", id);
+      const response = await fetch(`${backendUrl}api/notes/${id}/comments`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -53,14 +88,21 @@ const noteDetail = () => {
         body: JSON.stringify(commentData),
       });
 
+      console.log("Comment post response status:", response.status);
+
       if (response.ok) {
         const newComment = await response.json();
         setComments([...comments, newComment]);
         setCommentText("");
         alert("Comentario publicado exitosamente.");
+      } else if (response.status === 404) {
+        alert("La nota no existe. No se puede comentar.");
+      } else if (response.status === 401) {
+        alert("Sesión expirada. Por favor, inicia sesión nuevamente.");
+        sessionStorage.removeItem("token");
       } else {
         const errorData = await response.json();
-        alert(`Error al publicar el comentario: ${errorData.msg}`);
+        alert(`Error al publicar el comentario: ${errorData.msg || errorData.error || "Error desconocido"}`);
       }
     } catch (error) {
       console.error("Error en la conexión:", error);
@@ -68,36 +110,105 @@ const noteDetail = () => {
     }
   };
 
-  //esto debe de ser el texto de la nota publicada, la cual deberia de abrirse la hacer
-  // clic en la miniatura de la nota en el perfil, pero esa historia no se ha agregado#
+  // Función para manejar la edición de comentarios
+  const handleEditComment = (commentId, currentContent) => {
+    setEditingCommentId(commentId);
+    setEditedContent(currentContent);
+  };
+
+  // Función para cancelar edición
+  const handleCancelEdit = () => {
+    setEditingCommentId(null);
+    setEditedContent("");
+  };
+
+  // Función para guardar comentario editado
+  const handleSaveEdit = async (commentId) => {
+    const token = sessionStorage.getItem("token");
+    
+    if (!token) {
+      alert("Debes iniciar sesión para editar comentarios.");
+      return;
+    }
+
+    if (!editedContent.trim()) {
+      alert("El comentario no puede estar vacío.");
+      return;
+    }
+
+    try {
+      const response = await fetch(`${backendUrl}api/comments/${commentId}`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${token}`,
+        },
+        body: JSON.stringify({ comment: editedContent }),
+      });
+
+      if (response.ok) {
+        const updatedComment = await response.json();
+        setComments(comments.map(comment => 
+          comment.comment_id === commentId ? updatedComment : comment
+        ));
+        setEditingCommentId(null);
+        setEditedContent("");
+        alert("Comentario actualizado exitosamente.");
+      } else if (response.status === 401) {
+        alert("Sesión expirada. Por favor, inicia sesión nuevamente.");
+        sessionStorage.removeItem("token");
+      } else {
+        const errorData = await response.json();
+        alert(`Error al actualizar el comentario: ${errorData.msg || errorData.error}`);
+      }
+    } catch (error) {
+      console.error("Error en la conexión:", error);
+      alert("Ocurrió un error inesperado.");
+    }
+  };
+
+  const getCurrentUserId = () => {
+    const token = sessionStorage.getItem("token");
+    if (!token) return null;
+    
+    try {
+      const payload = JSON.parse(atob(token.split('.')[1]));
+      return payload.sub ? payload.sub.toString() : null;
+    } catch (error) {
+      console.error("Error decodificando token:", error);
+      return null;
+    }
+  };
+
+  const currentUserId = getCurrentUserId();
+
+  // Verificar si el usuario actual es el autor del comentario
+  const isCommentAuthor = (commentUserId) => {
+    return currentUserId && commentUserId.toString() === currentUserId;
+  };
+
+  if (loading) {
+    return <div className="text-center mt-5">Cargando nota...</div>;
+  }
+
+  if (!note) {
+    return <div className="text-center mt-5">La nota no existe.</div>;
+  }
 
   return (
     <div className="row">
       <div className="col-6 m-auto bg-danger-subtle rounded-strong">
-        <h1 className="ms-5">Mi primera Nota</h1>
-        <p className="m-2">
-          Contrary to popular belief, Lorem Ipsum is not simply random text. It
-          has roots in a piece of classical Latin literature from 45 BC, making
-          it over 2000 years old. Richard McClintock, a Latin professor at
-          Hampden-Sydney College in Virginia, looked up one of the more obscure
-          Latin words, consectetur, from a Lorem Ipsum passage, and going
-          through the cites of the word in classical literature, discovered the
-          undoubtable source. Lorem Ipsum comes from sections 1.10.32 and
-          1.10.33 of "de Finibus Bonorum et Malorum" (The Extremes of Good and
-          Evil) by Cicero, written in 45 BC. This book is a treatise on the
-          theory of ethics, very popular during the Renaissance. The first line
-          of Lorem Ipsum, "Lorem ipsum dolor sit amet..", comes from a line in
-          section 1.10.32. The standard chunk of Lorem Ipsum used since the
-          1500s is reproduced below for those interested. Sections 1.10.32 and
-          1.10.33 from "de Finibus Bonorum et Malorum" by Cicero are also
-          reproduced in their exact original form, accompanied by English
-          versions from the 1914 translation by H. Rackham.
-        </p>
+        <h1 className="ms-5">{note.title}</h1>
+        <p className="m-2">{note.content}</p>
+        
         <div>
-          <button type="button" className="btn btn-outline-primary m-1">
-            Tag 4
-          </button>
+          {note.tags && note.tags.map((tag, index) => (
+            <button key={index} type="button" className="btn btn-outline-primary m-1">
+              {tag}
+            </button>
+          ))}
         </div>
+        
         <div className="mb-3">
           <label htmlFor="exampleFormControlTextarea1" className="form-label">
             <strong>Agregar un comentario</strong>
@@ -114,9 +225,60 @@ const noteDetail = () => {
             Publicar
           </button>
         </div>
+        
         <div>
-          {comments.map((c) => (
-            <Comment key={c.comment_id} commentData={c} />
+          {comments.map((comment) => (
+            <div key={comment.comment_id} className="card mb-2">
+              <div className="card-body">
+                <div className="d-flex justify-content-between align-items-center">
+                  <h6 className="card-subtitle mb-2 text-muted">
+                    {comment.first_name} {comment.last_name} (@{comment.username})
+                  </h6>
+                  {isCommentAuthor(comment.user_id) && editingCommentId !== comment.comment_id && (
+                    <button 
+                      className="btn btn-sm btn-outline-secondary"
+                      onClick={() => handleEditComment(comment.comment_id, comment.content)}
+                    >
+                      Editar
+                    </button>
+                  )}
+                </div>
+                
+                {editingCommentId === comment.comment_id ? (
+                  <>
+                    <textarea
+                      className="form-control mb-2"
+                      value={editedContent}
+                      onChange={(e) => setEditedContent(e.target.value)}
+                      rows="3"
+                    />
+                    <div className="d-flex gap-2">
+                      <button 
+                        className="btn btn-sm btn-primary"
+                        onClick={() => handleSaveEdit(comment.comment_id)}
+                      >
+                        Guardar
+                      </button>
+                      <button 
+                        className="btn btn-sm btn-secondary"
+                        onClick={handleCancelEdit}
+                      >
+                        Cancelar
+                      </button>
+                    </div>
+                  </>
+                ) : (
+                  <p className="card-text">{comment.content}</p>
+                )}
+                
+                <small className="text-muted">
+                  {new Date(comment.created_at).toLocaleString()}
+                  {comment.updated_at && comment.updated_at !== comment.created_at && 
+                    ` · Editado: ${new Date(comment.updated_at).toLocaleString()}`
+                  }
+                </small>
+              </div>
+            </div>
           ))}
         </div>
       </div>
@@ -124,4 +286,4 @@ const noteDetail = () => {
   );
 };
 
-export default noteDetail;
+export default NoteDetail;

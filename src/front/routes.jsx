@@ -24,17 +24,14 @@ export const router = createBrowserRouter(
     // Note: keep in mind that errorElement will be the default page when you don't get a route, customize that page to make your project more attractive.
     // Note: The child paths of the Layout element replace the Outlet component with the elements contained in the "element" attribute of these child paths.
 
-      // Root Route: All navigation will start from here.
       <Route path="/" element={<Layout />} errorElement={<h1>Not found!</h1>} >
-
-        {/* Nested Routes: Defines sub-routes within the BaseHome component. */}
         <Route path= "/" element={<Home />} />
         <Route path= "/Profile" element={<Profile />} />
-        <Route path="/single/:theId" element={ <Single />} />  {/* Dynamic route for single items */}
+        <Route path="/single/:theId" element={ <Single />} />
         <Route path="/demo" element={<Demo />} />
         <Route path="/RegisterForm" element={<RegisterForm />} />
         <Route path="/login" element={<LoginForm />} />
-        <Route path="/noteDetail" element={<NoteDetail />} />
+        <Route path="/noteDetail/:id" element={<NoteDetail />} />
       </Route>
     )
 
