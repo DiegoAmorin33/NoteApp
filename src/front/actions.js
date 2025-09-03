@@ -51,17 +51,12 @@ export const actions = (dispatch) => ({
             });
     },
 
-    /**
-     * Cierra la sesión del usuario, eliminando el token.
-     */
+   
     logout: () => {
         sessionStorage.removeItem("token");
         dispatch({ type: 'LOGOUT' });
     },
-
-    /**
-     * Obtener los datos del perfil del usuario autenticado.
-     */
+    
     getUser: (token) => {
         const opts = {
             headers: {

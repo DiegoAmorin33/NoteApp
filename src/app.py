@@ -34,15 +34,13 @@ db.init_app(app)
 
 from api.routes import api, bcrypt
 
-# Inicializa bcrypt con la app
+
 bcrypt.init_app(app)
 
-# --- CORRECCIÓN DE ORDEN EN LA CONFIGURACIÓN DE JWT ---
-# 1. PRIMERO, define TODA la configuración para JWT.
 app.config["JWT_SECRET_KEY"] = "clave-de-prueba-simple-sin-caracteres-raros"
 app.config["JWT_CSRF_PROTECTION"] = False
 
-# 2. SEGUNDO, inicializa JWTManager DESPUÉS de haber definido la configuración.
+
 jwt = JWTManager(app)
  
 # Setup admin y commands
