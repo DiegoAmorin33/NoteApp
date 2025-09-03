@@ -24,15 +24,11 @@ const LoginForm = () => {
 
         actions.login(email, password)
             .then(loggedIn => {
+                console.log(loggedIn)
                 if (loggedIn) {
                     // Si el login es exitoso, obtenemos los datos del usuario
-                    actions.getUser(sessionStorage.getItem("token"))
-                        .then(userFetched => {
-                            if (userFetched) {
-                                alert("¡Inicio de sesión exitoso!");
-                                navigate("/profile");
-                            }
-                        });
+                    alert("¡Inicio de sesión exitoso!");
+                    navigate("/profile");
                 } else {
                     setError("Email o Contraseña inválida");
                 }
@@ -42,10 +38,10 @@ const LoginForm = () => {
     return (
         <div className="container-fluid">
             <div className="row vh-100 d-flex align-items-center">
-                
+
                 <div className="col-md-4 col-lg-4 d-none d-md-block h-100 sidebar-custom-color"></div>
 
-                
+
                 <div className="col-12 col-md-4 col-lg-4">
                     <form onSubmit={handleLogin} className="p-4">
                         <div className="form-logo d-flex flex-column align-items-center mb-4">
@@ -98,7 +94,7 @@ const LoginForm = () => {
                     </form>
                 </div>
 
-                
+
                 <div className="col-md-4 col-lg-4 d-none d-md-block h-100 sidebar-custom-color"></div>
             </div>
         </div>
