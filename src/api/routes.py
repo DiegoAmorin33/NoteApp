@@ -24,6 +24,8 @@ def handle_hello():
     return jsonify(response_body), 200
 
 # PAULO Endpoint para crear un nuevo tag
+
+
 @api.route('/tags', methods=['POST'])
 def create_tag():
     body = request.get_json()
@@ -46,6 +48,8 @@ def create_tag():
         return jsonify({"msg": f"Error creating tag: {str(e)}"}), 500
 
 # PAULO Endpoint para ver todos los tags
+
+
 @api.route('/tags', methods=['GET'])
 def get_tags():
     all_tags = Tags.query.all()
@@ -58,6 +62,8 @@ def get_tags():
     return jsonify(serialized_tags), 200
 
 # PAULO Endpoint para obtener todas las notas
+
+
 @api.route('/notes', methods=['GET'])
 def get_notes():
     all_notes = Notes.query.all()
@@ -72,6 +78,8 @@ def get_notes():
     return jsonify(serialized_notes), 200
 
 # PAULO Endpoint para obtener todos los comentarios de una nota
+
+
 @api.route('/notes/<int:note_id>/comments', methods=['GET'])
 def get_comments(note_id):
     note = Notes.query.get(note_id)
@@ -82,42 +90,47 @@ def get_comments(note_id):
     return jsonify(comments_list), 200
 
 # PAULO Endpoint para crear una nueva nota
+
+
 @api.route('/notes', methods=["POST"])
-@jwt_required() #un token activo es requerido
+@jwt_required()  # un token activo es requerido
 def create_note():
-    current_user_id = get_jwt_identity() #guardo la identidad que el jwt_required detecto
+    # guardo la identidad que el jwt_required detecto
+    current_user_id = get_jwt_identity()
     body = request.get_json()
     print("Datos recibidos del frontend:", body)
-    required_fields = ['title', 'content', 'tags'] #itero y condiciono la existencia de cada field
+    # itero y condiciono la existencia de cada field
+    required_fields = ['title', 'content', 'tags']
     if not all(field in body for field in required_fields):
         return jsonify({"msg": "Missing required fields"}), 400
 
     tag_names = body.get('tags')
 
-    if not isinstance(tag_names, list): #valido que el tag sea una lista
+    if not isinstance(tag_names, list):  # valido que el tag sea una lista
         return jsonify({"msg": "Los tags deben ser una lista"}), 400
 
     new_note = Notes(
         title=body.get('title'),
         content=body.get('content'),
-        user_id=current_user_id,#id del token
+        user_id=current_user_id,  # id del token
         is_anonymous=False,
     )
 
     try:
         for tag_name in tag_names:
-            tag = Tags.query.filter_by(name=tag_name).first() #buscamos el tag seleccionado que vino del body y devuelve el primer resultado que encuentre
+            # buscamos el tag seleccionado que vino del body y devuelve el primer resultado que encuentre
+            tag = Tags.query.filter_by(name=tag_name).first()
             if not tag:
                 return jsonify({"msg": f"El tag '{tag_name}' no existe."}), 400
             new_note.tags.append(tag)
 
         db.session.add(new_note)
-        db.session.commit() #guardamos
-    except Exception as e: #si el guardado falla, nos vamos a cero
+        db.session.commit()  # guardamos
+    except Exception as e:  # si el guardado falla, nos vamos a cero
         db.session.rollback()
         return jsonify({"msg": f"An error occurred: {str(e)}"}), 500
 
-    return jsonify({ #todo ok en el try, construimos un diccionarios con los datos obtenidos
+    return jsonify({  # todo ok en el try, construimos un diccionarios con los datos obtenidos
         "note_id": new_note.note_id,
         "title": new_note.title,
         "content": new_note.content,
@@ -169,6 +182,8 @@ def create_user():
     return jsonify({"message": "Usuario creado exitosamente"}), 201
 
 # Endpoint para obtener todos los usuarios
+
+
 @api.route('/users', methods=['GET'])
 def get_all_users():
     all_users = User.query.all()
@@ -178,6 +193,8 @@ def get_all_users():
     return jsonify(serialized_users), 200
 
 # PAULO Endpoint para crear un nuevo comentario en una nota
+
+
 @api.route('/notes/<int:note_id>/comments', methods=["POST"])
 @jwt_required()
 def create_comment(note_id):
@@ -191,8 +208,8 @@ def create_comment(note_id):
     if not note:
         return jsonify({"msg": "La nota no existe."}), 404
 
-    new_comment = Comments( 
-        content=comment_content, 
+    new_comment = Comments(
+        content=comment_content,
         user_id=current_user_id,
         note_id=note_id
     )
@@ -200,8 +217,8 @@ def create_comment(note_id):
     try:
         db.session.commit()
         return jsonify({
-            "id": new_comment.comment_id, 
-            "content": new_comment.content, 
+            "id": new_comment.comment_id,
+            "content": new_comment.content,
             "user_id": new_comment.user_id,
             "note_id": new_comment.note_id
         }), 201
@@ -227,6 +244,7 @@ def create_token():
     access_token = create_access_token(identity=str(user.id))
 
     return jsonify(access_token=access_token)
+
 
 @api.route('/notes/<int:note_id>', methods=['GET'])
 def get_note_by_id(note_id):
