@@ -1,5 +1,5 @@
 from flask import Flask, request, jsonify, url_for, Blueprint
-from api.models import db, User, Notes, Tags
+from api.models import db, User, Notes, Tags, Comments
 from api.utils import generate_sitemap, APIException
 from flask_cors import CORS
 from flask_bcrypt import Bcrypt
@@ -171,8 +171,8 @@ def create_user():
         is_active=True
     )
 
-    hashed_password = bcrypt.generate_password_hash(password)
-    User.password = hashed_password
+    #hashed_password = bcrypt.generate_password_hash(password)
+    #User.password = hashed_password
 
     db.session.add(new_user)
     db.session.commit()
@@ -211,6 +211,29 @@ def create_comment(note_id):
         user_id=current_user_id,
         note_id=note_id
     )
+
+
+
+@api.route('/token', methods=['POST'])
+def create_token():
+    
+    email = request.json.get("email", None)
+    password = request.json.get("password", None)
+
+    
+    user = User.query.filter_by(email=email).first()
+
+    if user is None:
+        return jsonify({"error": "Email o contraseña invalida"}), 401
+
+    if not bcrypt.check_password_hash(user.password_hash, password):
+        return jsonify({"error": "Email o contraseña invalida"}), 401
+    
+    print(f"ID del usuario para crear el token: {user.id}")
+    access_token = create_access_token(identity=user.id)
+    print(f"Token generado: {access_token}")
+    
+    return jsonify(access_token=access_token)
 
     db.session.add(new_comment)
     try:
