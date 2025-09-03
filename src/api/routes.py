@@ -5,7 +5,7 @@ from flask_cors import CORS
 from flask_bcrypt import Bcrypt
 from flask_jwt_extended import create_access_token
 from flask_jwt_extended import jwt_required, get_jwt_identity
-
+import datetime
 
 
 api = Blueprint('api', __name__)
@@ -344,16 +344,20 @@ def edit_comment(comment_id):
     
     try:
         db.session.commit()
+        
+        # Obtener información del usuario por separado
+        user = User.query.get(comment.user_id)
+        
         return jsonify({
             "comment_id": comment.comment_id,
             "content": comment.content,
             "user_id": comment.user_id,
             "note_id": comment.note_id,
-            "username": comment.user.username,
-            "first_name": comment.user.first_name,
-            "last_name": comment.user.last_name,
-            "created_at": comment.created_at.isoformat(),
-            "updated_at": comment.updated_at.isoformat()
+            "username": user.username if user else None,
+            "first_name": user.first_name if user else None,
+            "last_name": user.last_name if user else None,
+            "created_at": comment.created_at.isoformat() if comment.created_at else None,
+            "updated_at": comment.updated_at.isoformat() if comment.updated_at else None
         }), 200
     except Exception as e:
         db.session.rollback()
