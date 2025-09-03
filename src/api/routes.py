@@ -1,8 +1,9 @@
 from flask import Flask, request, jsonify, url_for, Blueprint
-from api.models import db, User, Notes, Tags
+from api.models import db, User, Notes, Tags, Comments
 from api.utils import generate_sitemap, APIException
 from flask_cors import CORS
 from flask_bcrypt import Bcrypt
+from flask_jwt_extended import create_access_token
 from flask_jwt_extended import create_access_token
 from flask_jwt_extended import jwt_required, get_jwt_identity
 
@@ -93,7 +94,9 @@ def get_comments(note_id):
 
 
 @api.route('/notes', methods=["POST"])
+
 @jwt_required()  # un token activo es requerido
+
 def create_note():
     # guardo la identidad que el jwt_required detecto
     current_user_id = get_jwt_identity()
@@ -173,13 +176,35 @@ def create_user():
         is_active=True
     )
 
-    hashed_password = bcrypt.generate_password_hash(password)
-    User.password = hashed_password
+    #hashed_password = bcrypt.generate_password_hash(password)
+    #User.password = hashed_password
 
     db.session.add(new_user)
     db.session.commit()
 
     return jsonify({"message": "Usuario creado exitosamente"}), 201
+
+
+
+@api.route('/token', methods=['POST'])
+def create_token():
+
+    email = request.json.get("email", None)
+    password = request.json.get("password", None)
+
+    user = User.query.filter_by(email=email).first()
+
+    if user is None:
+        return jsonify({"error": "Email o contraseña invalida"}), 401
+
+    if not bcrypt.check_password_hash(user.password_hash, password):
+        return jsonify({"error": "Email o contraseña invalida"}), 401
+    
+   
+    access_token = create_access_token(identity=user.id)
+   
+    
+    return jsonify(access_token=access_token)
 
 # Endpoint para obtener todos los usuarios
 
@@ -195,6 +220,7 @@ def get_all_users():
 # PAULO Endpoint para crear un nuevo comentario en una nota
 
 
+
 @api.route('/notes/<int:note_id>/comments', methods=["POST"])
 @jwt_required()
 def create_comment(note_id):
@@ -203,10 +229,6 @@ def create_comment(note_id):
     comment_content = body.get('content')
     if not comment_content:
         return jsonify({"msg": "El comentario no puede estar vacío."}), 400
-
-    note = Notes.query.get(note_id)
-    if not note:
-        return jsonify({"msg": "La nota no existe."}), 404
 
     new_comment = Comments(
         content=comment_content,
@@ -226,22 +248,23 @@ def create_comment(note_id):
         db.session.rollback()
         return jsonify({"msg": f"Ocurrió un error inesperado: {str(e)}"}), 500
 
+# PAULO Endpoint para obtener todos los comentarios de una nota
 
-@api.route('/token', methods=['POST'])
-def create_token():
 
-    email = request.json.get("email", None)
-    password = request.json.get("password", None)
 
-    user = User.query.filter_by(email=email).first()
+
+#endpoint para perfil
+@api.route('/profile', methods=['GET'])
+@jwt_required() 
+def get_profile():
+    current_user_id = get_jwt_identity()
+    user = User.query.get(current_user_id)
 
     if user is None:
-        return jsonify({"error": "Email o contraseña invalida"}), 401
+        return jsonify({"error": "Usuario no encontrado"}), 404
+    
+    return jsonify(id=user.id, username=user.username, first_name=user.first_name, last_name=user.last_name, email=user.email)
 
-    if not bcrypt.check_password_hash(user.password_hash, password):
-        return jsonify({"error": "Email o contraseña invalida"}), 401
-
-    access_token = create_access_token(identity=str(user.id))
 
     return jsonify(access_token=access_token)
 
@@ -260,3 +283,4 @@ def get_note_by_id(note_id):
     }
 
     return jsonify(serialized_note), 200
+  
