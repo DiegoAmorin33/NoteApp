@@ -94,41 +94,46 @@ def get_comments(note_id):
 
 
 @api.route('/notes', methods=["POST"])
-@jwt_required()
+
+@jwt_required()  # un token activo es requerido
+
 def create_note():
+    # guardo la identidad que el jwt_required detecto
     current_user_id = get_jwt_identity()
     body = request.get_json()
     print("Datos recibidos del frontend:", body)
+    # itero y condiciono la existencia de cada field
     required_fields = ['title', 'content', 'tags']
     if not all(field in body for field in required_fields):
         return jsonify({"msg": "Missing required fields"}), 400
 
     tag_names = body.get('tags')
 
-    if not isinstance(tag_names, list):
+    if not isinstance(tag_names, list):  # valido que el tag sea una lista
         return jsonify({"msg": "Los tags deben ser una lista"}), 400
 
     new_note = Notes(
         title=body.get('title'),
         content=body.get('content'),
-        user_id=current_user_id,
+        user_id=current_user_id,  # id del token
         is_anonymous=False,
     )
 
     try:
         for tag_name in tag_names:
+            # buscamos el tag seleccionado que vino del body y devuelve el primer resultado que encuentre
             tag = Tags.query.filter_by(name=tag_name).first()
             if not tag:
                 return jsonify({"msg": f"El tag '{tag_name}' no existe."}), 400
             new_note.tags.append(tag)
 
         db.session.add(new_note)
-        db.session.commit()
-    except Exception as e:
+        db.session.commit()  # guardamos
+    except Exception as e:  # si el guardado falla, nos vamos a cero
         db.session.rollback()
         return jsonify({"msg": f"An error occurred: {str(e)}"}), 500
 
-    return jsonify({
+    return jsonify({  # todo ok en el try, construimos un diccionarios con los datos obtenidos
         "note_id": new_note.note_id,
         "title": new_note.title,
         "content": new_note.content,
@@ -216,14 +221,39 @@ def get_all_users():
 
 
 
+@api.route('/notes/<int:note_id>/comments', methods=["POST"])
+@jwt_required()
+def create_comment(note_id):
+    current_user_id = get_jwt_identity()
+    body = request.get_json()
+    comment_content = body.get('content')
+    if not comment_content:
+        return jsonify({"msg": "El comentario no puede estar vacío."}), 400
+
+    new_comment = Comments(
+        content=comment_content,
+        user_id=current_user_id,
+        note_id=note_id
+    )
+    db.session.add(new_comment)
+    try:
+        db.session.commit()
+        return jsonify({
+            "id": new_comment.comment_id,
+            "content": new_comment.content,
+            "user_id": new_comment.user_id,
+            "note_id": new_comment.note_id
+        }), 201
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({"msg": f"Ocurrió un error inesperado: {str(e)}"}), 500
 
 # PAULO Endpoint para obtener todos los comentarios de una nota
 
 
 
-    #endpoint para perfil
 
-
+#endpoint para perfil
 @api.route('/profile', methods=['GET'])
 @jwt_required() 
 def get_profile():
@@ -235,3 +265,22 @@ def get_profile():
     
     return jsonify(id=user.id, username=user.username, first_name=user.first_name, last_name=user.last_name, email=user.email)
 
+
+    return jsonify(access_token=access_token)
+
+
+@api.route('/notes/<int:note_id>', methods=['GET'])
+def get_note_by_id(note_id):
+    note = Notes.query.get(note_id)
+    if not note:
+        return jsonify({"msg": "Nota no encontrada"}), 404
+    serialized_note = {
+        "note_id": note.note_id,
+        "title": note.title,
+        "content": note.content,
+        "user_id": note.user_id,
+        "tags": [{"tag_id": tag.tag_id, "name": tag.name} for tag in note.tags]
+    }
+
+    return jsonify(serialized_note), 200
+  

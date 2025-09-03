@@ -54,7 +54,7 @@ export const NewNote = () => {
     setTitle("");
     setSelectedTag(null);
     setShowLoginErrorModal(false);
-  };
+  }; //prueba
 
 
   const publishNote = async () => {
