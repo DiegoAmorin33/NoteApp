@@ -260,3 +260,19 @@ def get_note_by_id(note_id):
     }
 
     return jsonify(serialized_note), 200
+
+# Endpoint para actualizar la bio del usuario
+@api.route('/profile/bio', methods=['PUT'])
+@jwt_required()
+def update_user_bio():
+    current_user_id = get_jwt_identity()
+    user = User.query.get(current_user_id)
+    
+    data = request.get_json()
+    bio = data.get('bio', '')
+    
+    user.bio = bio
+    db.session.commit()
+    
+    return jsonify({"message": "Bio actualizada exitosamente", "bio": user.bio}), 200
+
