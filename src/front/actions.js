@@ -1,5 +1,8 @@
 const backendUrl = import.meta.env.VITE_BACKEND_URL;
 
+// Debug: verificar la URL del backend
+console.log("🔍 Backend URL:", backendUrl);
+
 /**
  * Función para decodificar y verificar el token JWT
  */
@@ -32,12 +35,15 @@ export const actions = (dispatch) => ({
             body: JSON.stringify({ email, password }),
         };
 
-        console.log("Making login request to:", `${backendUrl}api/token`);
+        // ✅ URL CORREGIDA - con slash antes de api
+        const loginUrl = `${backendUrl}/api/token`;
+        console.log("🌐 Making login request to:", loginUrl);
 
-        return fetch(`${backendUrl}api/token`, opts)
+        return fetch(loginUrl, opts)
             .then(async (resp) => {
                 const responseText = await resp.text();
-                console.log("Login response status:", resp.status);
+                console.log("📊 Login response status:", resp.status);
+                console.log("📋 Login response text:", responseText);
                 
                 if (resp.status === 401) {
                     throw new Error("Credenciales inválidas");
@@ -54,20 +60,21 @@ export const actions = (dispatch) => ({
 
                 try {
                     const data = JSON.parse(responseText);
-                    console.log("Login successful");
+                    console.log("✅ Login successful - Response data:", data);
                     return data;
                 } catch (e) {
-                    console.error("Error parsing login response:", e);
+                    console.error("❌ Error parsing login response:", e);
                     throw new Error("Respuesta del servidor no válida");
                 }
             })
             .then(data => {
                 if (!data.access_token) {
-                    console.error("No access_token in response:", data);
+                    console.error("❌ No access_token in response:", data);
                     throw new Error("Token no recibido del servidor");
                 }
                 
                 // Debug del token
+                console.log("🔑 Token recibido:", data.access_token);
                 const tokenPayload = decodeJWT(data.access_token);
                 
                 if (!tokenPayload) {
@@ -76,22 +83,25 @@ export const actions = (dispatch) => ({
                 
                 // ACEPTAR tanto números como strings en el sub
                 if (tokenPayload.sub === undefined || tokenPayload.sub === null) {
-                    console.error("Token inválido: subject no definido");
+                    console.error("❌ Token inválido: subject no definido");
                     throw new Error("Token inválido: subject no definido");
                 }
                 
                 // Convertir sub a string si es número (para compatibilidad)
                 if (typeof tokenPayload.sub === 'number') {
-                    console.log("Converting numeric sub to string:", tokenPayload.sub);
+                    console.log("🔢 Converting numeric sub to string:", tokenPayload.sub);
                     tokenPayload.sub = tokenPayload.sub.toString();
                 }
                 
-                sessionStorage.setItem("token", data.access_token);
+                // Guardar en localStorage para persistencia
+                localStorage.setItem("token", data.access_token);
+                console.log("💾 Token guardado en localStorage");
+                
                 dispatch({ type: 'LOGIN_SUCCESS', payload: data.access_token });
                 return true;
             })
             .catch(error => {
-                console.error("Error durante el login:", error.message);
+                console.error("❌ Error durante el login:", error.message);
                 dispatch({ type: 'LOGIN_ERROR', payload: error.message });
                 return false;
             });
@@ -107,12 +117,15 @@ export const actions = (dispatch) => ({
             body: JSON.stringify(userData),
         };
 
-        console.log("Making signup request to:", `${backendUrl}api/user`);
+        // ✅ URL CORREGIDA - con slash antes de api
+        const signupUrl = `${backendUrl}/api/user`;
+        console.log("🌐 Making signup request to:", signupUrl);
 
-        return fetch(`${backendUrl}api/user`, opts)
+        return fetch(signupUrl, opts)
             .then(async (resp) => {
                 const responseText = await resp.text();
-                console.log("Signup response status:", resp.status);
+                console.log("📊 Signup response status:", resp.status);
+                console.log("📋 Signup response text:", responseText);
                 
                 if (resp.status === 422) {
                     let errorMessage = "Error de validación en el registro";
@@ -144,42 +157,46 @@ export const actions = (dispatch) => ({
                 }
             })
             .then(data => {
-                console.log("Signup successful, attempting login...");
+                console.log("✅ Signup successful, attempting login...");
                 return actions(dispatch).login(userData.email, userData.password);
             })
             .catch(error => {
-                console.error("Error durante el registro:", error.message);
+                console.error("❌ Error durante el registro:", error.message);
                 dispatch({ type: 'SIGNUP_ERROR', payload: error.message });
                 throw error;
             });
     },
 
-   
     logout: () => {
-        console.log("Logging out...");
+        console.log("🚪 Logging out...");
+        localStorage.removeItem("token");
         sessionStorage.removeItem("token");
+        console.log("🗑️ Tokens removidos de storage");
         dispatch({ type: 'LOGOUT' });
     },
     
     getUser: (token) => {
         if (!token) {
-            console.error("No token provided for getUser");
+            console.error("❌ No token provided for getUser");
             dispatch({ type: 'AUTH_ERROR', payload: "Token no proporcionado" });
             return false;
         }
 
         // Debug: inspeccionar el token
+        console.log("🔍 Token para getUser:", token);
         const tokenPayload = decodeJWT(token);
         
         if (!tokenPayload) {
-            console.error("Token inválido: no se pudo decodificar");
+            console.error("❌ Token inválido: no se pudo decodificar");
+            localStorage.removeItem("token");
             sessionStorage.removeItem("token");
             dispatch({ type: 'LOGOUT' });
             return false;
         }
 
         if (tokenPayload.sub === undefined || tokenPayload.sub === null) {
-            console.error("Token inválido: falta subject (sub)");
+            console.error("❌ Token inválido: falta subject (sub)");
+            localStorage.removeItem("token");
             sessionStorage.removeItem("token");
             dispatch({ type: 'LOGOUT' });
             return false;
@@ -187,7 +204,7 @@ export const actions = (dispatch) => ({
 
         // ACEPTAR tanto números como strings en el sub
         if (typeof tokenPayload.sub === 'number') {
-            console.log("Numeric sub detected in profile request:", tokenPayload.sub);
+            console.log("🔢 Numeric sub detected in profile request:", tokenPayload.sub);
         }
 
         const opts = {
@@ -199,24 +216,28 @@ export const actions = (dispatch) => ({
             },
         };
 
-        console.log("Making profile request to:", `${backendUrl}api/profile`);
+        // ✅ URL CORREGIDA - con slash antes de api
+        const profileUrl = `${backendUrl}/api/profile`;
+        console.log("🌐 Making profile request to:", profileUrl);
 
-        return fetch(`${backendUrl}api/profile`, opts)
+        return fetch(profileUrl, opts)
             .then(async (resp) => {
                 const responseText = await resp.text();
                 
-                console.log(`Profile response status: ${resp.status}`);
-                console.log(`Profile response text: ${responseText}`);
+                console.log(`📊 Profile response status: ${resp.status}`);
+                console.log(`📋 Profile response text: ${responseText}`);
 
                 if (resp.status === 401) {
-                    console.warn("Unauthorized - removing token");
+                    console.warn("⚠️ Unauthorized - removing token");
+                    localStorage.removeItem("token");
                     sessionStorage.removeItem("token");
                     dispatch({ type: 'LOGOUT' });
                     throw new Error("No autorizado - Sesión expirada");
                 }
                 
                 if (resp.status === 422) {
-                    console.warn("Unprocessable Entity - removing token");
+                    console.warn("⚠️ Unprocessable Entity - removing token");
+                    localStorage.removeItem("token");
                     sessionStorage.removeItem("token");
                     dispatch({ type: 'LOGOUT' });
                     
@@ -240,20 +261,20 @@ export const actions = (dispatch) => ({
 
                 try {
                     const data = JSON.parse(responseText);
-                    console.log("Profile data received successfully");
+                    console.log("✅ Profile data received successfully:", data);
                     return data;
                 } catch (e) {
-                    console.error("Error parsing profile response:", e);
+                    console.error("❌ Error parsing profile response:", e);
                     throw new Error("Respuesta del servidor no válida");
                 }
             })
             .then(data => {
                 dispatch({ type: 'SET_USER', payload: data });
-                console.log("Profile data set successfully");
+                console.log("✅ Profile data set successfully");
                 return true;
             })
             .catch(error => {
-                console.error("Error fetching user data:", error.message);
+                console.error("❌ Error fetching user data:", error.message);
                 dispatch({ type: 'PROFILE_ERROR', payload: error.message });
                 return false;
             });
@@ -263,7 +284,7 @@ export const actions = (dispatch) => ({
      * Función para verificar y renovar token si es necesario
      */
     verifyToken: (token) => {
-        console.log("Verifying token...");
+        console.log("🔍 Verifying token...");
         return actions(dispatch).getUser(token);
     }
 });

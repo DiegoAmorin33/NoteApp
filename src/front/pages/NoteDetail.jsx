@@ -19,7 +19,7 @@ const NoteDetail = () => {
         
         console.log("Fetching note with ID:", id);
         
-        const noteResponse = await fetch(`${backendUrl}api/notes/${id}`);
+        const noteResponse = await fetch(`${backendUrl}/api/notes/${id}`);
         console.log("Note response status:", noteResponse.status);
         
         if (noteResponse.ok) {
@@ -34,7 +34,7 @@ const NoteDetail = () => {
           return;
         }
         
-        const commentsResponse = await fetch(`${backendUrl}api/notes/${id}/comments`);
+        const commentsResponse = await fetch(`${backendUrl}/api/notes/${id}/comments`);
         console.log("Comments response status:", commentsResponse.status);
         
         if (commentsResponse.ok) {
@@ -62,7 +62,7 @@ const NoteDetail = () => {
   };
 
   const handlePostComment = async () => {
-    const token = sessionStorage.getItem("token");
+    const token = sessionStorage.getItem("token") || localStorage.getItem("token");
 
     if (!token) {
       alert("Debes iniciar sesión para comentar.");
@@ -74,12 +74,14 @@ const NoteDetail = () => {
     }
 
     const commentData = {
-      comment: commentText,
+      content: commentText,
     };
 
     try {
       console.log("Posting comment to note ID:", id);
-      const response = await fetch(`${backendUrl}api/notes/${id}/comments`, {
+      console.log("Datos enviados al backend:", JSON.stringify(commentData));
+      
+      const response = await fetch(`${backendUrl}/api/notes/${id}/comments`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -100,6 +102,7 @@ const NoteDetail = () => {
       } else if (response.status === 401) {
         alert("Sesión expirada. Por favor, inicia sesión nuevamente.");
         sessionStorage.removeItem("token");
+        localStorage.removeItem("token");
       } else {
         const errorData = await response.json();
         alert(`Error al publicar el comentario: ${errorData.msg || errorData.error || "Error desconocido"}`);
@@ -124,7 +127,7 @@ const NoteDetail = () => {
 
   // Función para guardar comentario editado
   const handleSaveEdit = async (commentId) => {
-    const token = sessionStorage.getItem("token");
+    const token = sessionStorage.getItem("token") || localStorage.getItem("token");
     
     if (!token) {
       alert("Debes iniciar sesión para editar comentarios.");
@@ -137,7 +140,7 @@ const NoteDetail = () => {
     }
 
     try {
-      const response = await fetch(`${backendUrl}api/comments/${commentId}`, {
+      const response = await fetch(`${backendUrl}/api/comments/${commentId}`, {
         method: "PUT",
         headers: {
           "Content-Type": "application/json",
@@ -157,6 +160,7 @@ const NoteDetail = () => {
       } else if (response.status === 401) {
         alert("Sesión expirada. Por favor, inicia sesión nuevamente.");
         sessionStorage.removeItem("token");
+        localStorage.removeItem("token");
       } else {
         const errorData = await response.json();
         alert(`Error al actualizar el comentario: ${errorData.msg || errorData.error}`);
@@ -167,8 +171,48 @@ const NoteDetail = () => {
     }
   };
 
+  // Función para eliminar comentario
+  const handleDeleteComment = async (commentId) => {
+    const token = sessionStorage.getItem("token") || localStorage.getItem("token");
+    
+    if (!token) {
+      alert("Debes iniciar sesión para eliminar comentarios.");
+      return;
+    }
+
+    if (!window.confirm("¿Estás seguro de que quieres eliminar este comentario?")) {
+      return;
+    }
+
+    try {
+      const response = await fetch(`${backendUrl}/api/comments/${commentId}`, {
+        method: "DELETE",
+        headers: {
+          "Authorization": `Bearer ${token}`,
+        },
+      });
+
+      if (response.ok) {
+        setComments(comments.filter(comment => comment.comment_id !== commentId));
+        alert("Comentario eliminado exitosamente.");
+      } else if (response.status === 401) {
+        alert("Sesión expirada. Por favor, inicia sesión nuevamente.");
+        sessionStorage.removeItem("token");
+        localStorage.removeItem("token");
+      } else if (response.status === 403) {
+        alert("No tienes permisos para eliminar este comentario.");
+      } else {
+        const errorData = await response.json();
+        alert(`Error al eliminar el comentario: ${errorData.msg || errorData.error}`);
+      }
+    } catch (error) {
+      console.error("Error en la conexión:", error);
+      alert("Ocurrió un error inesperado.");
+    }
+  };
+
   const getCurrentUserId = () => {
-    const token = sessionStorage.getItem("token");
+    const token = sessionStorage.getItem("token") || localStorage.getItem("token");
     if (!token) return null;
     
     try {
@@ -227,20 +271,36 @@ const NoteDetail = () => {
         </div>
         
         <div>
+          <h4>Comentarios ({comments.length})</h4>
           {comments.map((comment) => (
-            <div key={comment.comment_id} className="card mb-2">
+            <div key={comment.comment_id} className="card mb-3">
               <div className="card-body">
-                <div className="d-flex justify-content-between align-items-center">
-                  <h6 className="card-subtitle mb-2 text-muted">
+                <div className="d-flex justify-content-between align-items-start mb-2">
+                  <h6 className="card-subtitle text-muted">
                     {comment.first_name} {comment.last_name} (@{comment.username})
                   </h6>
-                  {isCommentAuthor(comment.user_id) && editingCommentId !== comment.comment_id && (
-                    <button 
-                      className="btn btn-sm btn-outline-secondary"
-                      onClick={() => handleEditComment(comment.comment_id, comment.content)}
-                    >
-                      Editar
-                    </button>
+                  
+                  {isCommentAuthor(comment.user_id) && (
+                    <div className="btn-group">
+                      {editingCommentId !== comment.comment_id && (
+                        <>
+                          <button 
+                            className="btn btn-sm btn-outline-primary"
+                            onClick={() => handleEditComment(comment.comment_id, comment.content)}
+                            title="Editar comentario"
+                          >
+                            <i className="bi bi-pencil"></i> Editar
+                          </button>
+                          <button 
+                            className="btn btn-sm btn-outline-danger"
+                            onClick={() => handleDeleteComment(comment.comment_id)}
+                            title="Eliminar comentario"
+                          >
+                            <i className="bi bi-trash"></i> Eliminar
+                          </button>
+                        </>
+                      )}
+                    </div>
                   )}
                 </div>
                 
@@ -254,16 +314,16 @@ const NoteDetail = () => {
                     />
                     <div className="d-flex gap-2">
                       <button 
-                        className="btn btn-sm btn-primary"
+                        className="btn btn-sm btn-success"
                         onClick={() => handleSaveEdit(comment.comment_id)}
                       >
-                        Guardar
+                        <i className="bi bi-check"></i> Guardar
                       </button>
                       <button 
                         className="btn btn-sm btn-secondary"
                         onClick={handleCancelEdit}
                       >
-                        Cancelar
+                        <i className="bi bi-x"></i> Cancelar
                       </button>
                     </div>
                   </>

@@ -117,7 +117,8 @@ export const NewNote = () => {
       return;
     }
 
-    const token = sessionStorage.getItem("token");
+    // ✅ ahora revisa sessionStorage primero, luego localStorage
+    const token = sessionStorage.getItem("token") || localStorage.getItem("token");
     if (!token) {
       hideTagModal();
       showLoginModal();
@@ -154,7 +155,8 @@ export const NewNote = () => {
   };
 
   const publishNote = async () => {
-    const token = sessionStorage.getItem("token");
+    // ✅ ahora revisa sessionStorage primero, luego localStorage
+    const token = sessionStorage.getItem("token") || localStorage.getItem("token");
     if (!token) {
       showLoginModal();
       return;
@@ -205,182 +207,125 @@ export const NewNote = () => {
 
   return (
     <div className="container">
-      <button
-        type="button"
-        className="btn btn-primary"
-        onClick={showMainModal}
-      >
-        NEW NOTE!
+      {/* 🔽 Aquí sigue todo tu JSX original (botón de New Note, modales, etc.) */}
+      <button className="btn btn-primary mt-3" onClick={showMainModal}>
+        New Note
       </button>
 
-      <div className="modal fade" ref={mainModalRef} tabIndex="-1" aria-labelledby="exampleModalLabel" aria-hidden="true">
+      {/* Modal principal */}
+      <div className="modal fade" ref={mainModalRef} tabIndex="-1" aria-hidden="true">
         <div className="modal-dialog modal-lg">
           <div className="modal-content">
             <div className="modal-header">
-              <h1 className="modal-title fs-5" id="exampleModalLabel">¿Qué deseas publicar?</h1>
-              <button type="button" className="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+              <h5 className="modal-title">Nueva Nota</h5>
+              <button type="button" className="btn-close" onClick={handleClose}></button>
             </div>
-            
             <div className="modal-body">
               <input
                 type="text"
-                placeholder="Título de tu nota"
-                className="form-control form-control-lg mb-3"
+                className="form-control mb-2"
+                placeholder="Título"
                 value={title}
                 onChange={handleTitleChange}
               />
-              
               <textarea
                 ref={textareaRef}
-                className="form-control form-control-lg mb-3"
+                className="form-control mb-2"
                 rows="3"
-                placeholder="¿Qué quieres compartir?"
+                placeholder="Escribe tu nota aquí..."
                 value={content}
                 onChange={handleContentChange}
-                style={{ resize: "none", minHeight: "120px" }}
-              />
-
-              {selectedTags.length > 0 && (
-                <div className="mb-3">
-                  <label className="form-label">Tags seleccionados:</label>
-                  <div className="d-flex flex-wrap gap-2">
-                    {selectedTags.map((tagName) => (
-                      <span key={tagName} className="badge bg-primary d-flex align-items-center">
-                        {tagName}
-                        <button
-                          type="button"
-                          className="btn-close btn-close-white ms-2"
-                          style={{ fontSize: '0.6rem' }}
-                          onClick={() => removeTag(tagName)}
-                          aria-label="Remover tag"
-                        ></button>
-                      </span>
-                    ))}
-                  </div>
-                </div>
-              )}
-
-              <div className="mb-3">
-                <div className="d-flex justify-content-between align-items-center mb-2">
-                  <label className="form-label mb-0">Selecciona tags:</label>
-                  <button 
-                    type="button" 
-                    className="btn btn-sm btn-outline-secondary"
-                    onClick={showTagModal}
-                  >
-                    + Crear nuevo tag
-                  </button>
-                </div>
-
-                <div className="d-flex flex-wrap gap-2">
-                  {availableTags.map((tag) => (
+              ></textarea>
+              <div className="mb-2">
+                <strong>Tags:</strong>
+                <div className="d-flex flex-wrap mt-2">
+                  {availableTags.map(tag => (
                     <button
-                      key={tag.tag_id || tag.id}
-                      type="button"
-                      className={`btn ${selectedTags.includes(tag.name) ? 'btn-primary' : 'btn-outline-primary'}`}
+                      key={tag.id}
+                      className={`btn btn-sm m-1 ${selectedTags.includes(tag.name) ? "btn-primary" : "btn-outline-primary"}`}
                       onClick={() => handleTagClick(tag.name)}
                     >
                       {tag.name}
-                      {selectedTags.includes(tag.name) && ' ✓'}
                     </button>
                   ))}
-                  
-                  {availableTags.length === 0 && (
-                    <div className="text-muted">
-                      No hay tags disponibles. <button 
-                        type="button" 
-                        className="btn btn-link p-0"
-                        onClick={showTagModal}
-                      >
-                        Crear el primer tag
-                      </button>
-                    </div>
-                  )}
+                  {selectedTags.map(tag => (
+                    !availableTags.some(t => t.name === tag) && (
+                      <span key={tag} className="badge bg-secondary m-1">
+                        {tag}
+                        <button
+                          type="button"
+                          className="btn-close btn-close-white ms-2"
+                          onClick={() => removeTag(tag)}
+                          style={{ fontSize: "0.6rem" }}
+                        ></button>
+                      </span>
+                    )
+                  ))}
+                  <button className="btn btn-sm btn-success m-1" onClick={showTagModal}>
+                    + Nuevo Tag
+                  </button>
                 </div>
               </div>
             </div>
-
             <div className="modal-footer">
-              <button 
-                type="button" 
-                className="btn btn-secondary" 
-                data-bs-dismiss="modal"
-              >
-                Cancelar
+              <button className="btn btn-secondary" onClick={handleClose}>
+                Cerrar
               </button>
-              <button 
-                type="button" 
-                className="btn btn-primary" 
-                onClick={publishNote}
-                disabled={isLoading || selectedTags.length === 0 || !title.trim() || !content.trim()}
-              >
-                {isLoading ? 'Publicando...' : 'Publicar'}
+              <button className="btn btn-primary" onClick={publishNote} disabled={isLoading}>
+                {isLoading ? "Publicando..." : "Publicar"}
               </button>
             </div>
           </div>
         </div>
       </div>
 
-      <div className="modal fade" ref={tagModalRef} tabIndex="-1" aria-labelledby="tagModalLabel" aria-hidden="true">
+      {/* Modal para crear nuevo Tag */}
+      <div className="modal fade" ref={tagModalRef} tabIndex="-1" aria-hidden="true">
         <div className="modal-dialog">
           <div className="modal-content">
             <div className="modal-header">
-              <h5 className="modal-title" id="tagModalLabel">Crear nuevo tag</h5>
-              <button type="button" className="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+              <h5 className="modal-title">Crear nuevo Tag</h5>
+              <button type="button" className="btn-close" onClick={hideTagModal}></button>
             </div>
             <div className="modal-body">
               <input
                 type="text"
                 className="form-control"
-                placeholder="Nombre del nuevo tag"
+                placeholder="Nombre del Tag"
                 value={newTagName}
                 onChange={(e) => setNewTagName(e.target.value)}
-                onKeyPress={(e) => e.key === 'Enter' && createNewTag()}
-                autoFocus
               />
             </div>
             <div className="modal-footer">
-              <button 
-                type="button" 
-                className="btn btn-secondary" 
-                data-bs-dismiss="modal"
-              >
+              <button className="btn btn-secondary" onClick={hideTagModal}>
                 Cancelar
               </button>
-              <button 
-                type="button" 
-                className="btn btn-primary" 
-                onClick={createNewTag}
-                disabled={isLoading || !newTagName.trim()}
-              >
-                {isLoading ? 'Creando...' : 'Crear tag'}
+              <button className="btn btn-success" onClick={createNewTag} disabled={isLoading}>
+                {isLoading ? "Creando..." : "Crear Tag"}
               </button>
             </div>
           </div>
         </div>
       </div>
 
-      <div className="modal fade" ref={loginModalRef} tabIndex="-1" aria-labelledby="loginModalLabel" aria-hidden="true">
+      {/* Modal de error de login */}
+      <div className="modal fade" ref={loginModalRef} tabIndex="-1" aria-hidden="true">
         <div className="modal-dialog">
           <div className="modal-content">
             <div className="modal-header">
-              <h5 className="modal-title" id="loginModalLabel">Error de Autenticación</h5>
-              <button type="button" className="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+              <h5 className="modal-title">Error</h5>
+              <button type="button" className="btn-close" onClick={hideLoginModal}></button>
             </div>
             <div className="modal-body">
-              <p>Debes iniciar sesión para poder publicar notas y crear tags.</p>
+              Debes iniciar sesión para realizar esta acción.
             </div>
             <div className="modal-footer">
-              <button 
-                type="button" 
-                className="btn btn-secondary" 
-                data-bs-dismiss="modal"
-              >
-                Cerrar
+              <button className="btn btn-primary" onClick={hideLoginModal}>
+                Entendido
               </button>
             </div>
           </div>
-        </div> 
+        </div>
       </div>
     </div>
   );
