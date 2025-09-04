@@ -43,10 +43,6 @@ def create_tag():
         return jsonify({"msg": f"Error creating tag: {str(e)}"}), 500
 
 # PAULO Endpoint para ver todos los tags
-
-# PAULO Endpoint para obtener todas las notas
-
-
 @api.route('/tags', methods=['GET'])
 def get_tags():
     all_tags = Tags.query.all()
@@ -73,7 +69,7 @@ def get_notes():
         })
     return jsonify(serialized_notes), 200
 
-# PAULO Endpoint para crear una nueva nota
+# PAULO Endpoint para crear una nueva nota (CORREGIDO)
 @api.route('/notes', methods=["POST"])
 @jwt_required()
 def create_note():
@@ -89,11 +85,11 @@ def create_note():
     if not isinstance(tag_names, list):
         return jsonify({"msg": "Los tags deben ser una lista"}), 400
 
+    # CORRECCIÓN: user_id solo una vez
     new_note = Notes(
         title=body.get('title'),
         content=body.get('content'),
-        user_id=current_user_id,
-        user_id=current_user_id,
+        user_id=current_user_id,  # ← SOLO UNA VEZ
         is_anonymous=False,
     )
 
@@ -105,9 +101,7 @@ def create_note():
             new_note.tags.append(tag)
 
         db.session.add(new_note)
-        db.session.commit()
-    except Exception as e:
-        db.session.commit()
+        db.session.commit()  # ← SOLO UN COMMIT
     except Exception as e:
         db.session.rollback()
         return jsonify({"msg": f"An error occurred: {str(e)}"}), 500
@@ -152,31 +146,10 @@ def create_user():
         is_active=True
     )
 
-    # hashed_password = bcrypt.generate_password_hash(password)
-    # User.password = hashed_password
-
     db.session.add(new_user)
     db.session.commit()
 
     return jsonify({"message": "Usuario creado exitosamente"}), 201
-
-
-@api.route('/token', methods=['POST'])
-def create_token():
-
-    email = request.json.get("email", None)
-    password = request.json.get("password", None)
-
-    user = User.query.filter_by(email=email).first()
-
-    if user is None:
-        return jsonify({"error": "Email o contraseña invalida"}), 401
-
-    if not bcrypt.check_password_hash(user.password_hash, password):
-        return jsonify({"error": "Email o contraseña invalida"}), 401
-
-    access_token = create_access_token(identity=str(user.id))
-    return jsonify(access_token=access_token)
 
 # Endpoint para obtener todos los usuarios
 @api.route('/users', methods=['GET'])
@@ -226,7 +199,7 @@ def create_comment(note_id):
         db.session.rollback()
         return jsonify({"msg": f"Ocurrió un error inesperado: {str(e)}"}), 500
 
-# Endpoint para login - CREATE TOKEN (ÚNICA VERSIÓN)
+# Endpoint para login - CREATE TOKEN (SOLO UNA VEZ - CORREGIDO)
 @api.route('/token', methods=['POST'])
 def create_token():
     email = request.json.get("email", None)
@@ -367,3 +340,58 @@ def update_user_bio():
     db.session.commit()
     
     return jsonify({"message": "Bio actualizada exitosamente", "bio": user.bio}), 200
+
+# Endpoint para actualizar un comentario
+@api.route('/comments/<int:comment_id>', methods=['PUT'])
+@jwt_required()
+def update_comment(comment_id):
+    current_user_id = int(get_jwt_identity())
+    body = request.get_json()
+    new_content = body.get('comment')
+
+    if not new_content or not new_content.strip():
+        return jsonify({"msg": "El comentario no puede estar vacío."}), 400
+
+    comment = Comments.query.get(comment_id)
+    if not comment:
+        return jsonify({"msg": "Comentario no encontrado."}), 404
+
+    if comment.user_id != current_user_id:
+        return jsonify({"msg": "No tienes permiso para editar este comentario."}), 403
+
+    comment.content = new_content
+    comment.updated_at = datetime.datetime.utcnow()
+
+    try:
+        db.session.commit()
+        return jsonify({
+            "comment_id": comment.comment_id,
+            "note_id": comment.note_id,
+            "user_id": comment.user_id,
+            "content": comment.content,
+            "created_at": comment.created_at.isoformat() if comment.created_at else None,
+            "updated_at": comment.updated_at.isoformat() if comment.updated_at else None
+        }), 200
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({"msg": f"Ocurrió un error al actualizar el comentario: {str(e)}"}), 500
+
+# Endpoint para eliminar un comentario
+@api.route('/comments/<int:comment_id>', methods=['DELETE'])
+@jwt_required()
+def delete_comment(comment_id):
+    current_user_id = int(get_jwt_identity())
+    comment = Comments.query.get(comment_id)
+    if not comment:
+        return jsonify({"msg": "Comentario no encontrado."}), 404
+
+    if comment.user_id != current_user_id:
+        return jsonify({"msg": "No tienes permiso para eliminar este comentario."}), 403
+
+    try:
+        db.session.delete(comment)
+        db.session.commit()
+        return jsonify({"msg": "Comentario eliminado exitosamente."}), 200
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({"msg": f"Ocurrió un error al eliminar el comentario: {str(e)}"}), 500

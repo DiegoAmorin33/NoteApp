@@ -2,45 +2,28 @@ import React, { useState, useEffect } from "react";
 import { useParams } from "react-router-dom";
 
 const NoteDetail = () => {
-const NoteDetail = () => {
   const [commentText, setCommentText] = useState("");
   const [note, setNote] = useState(null);
   const [comments, setComments] = useState([]);
   const [editingCommentId, setEditingCommentId] = useState(null);
   const [editedContent, setEditedContent] = useState("");
-  const [note, setNote] = useState(null);
   const [loading, setLoading] = useState(true);
-  
+
   const { id } = useParams();
   const backendUrl = import.meta.env.VITE_BACKEND_URL;
 
   useEffect(() => {
-    if (!noteId) return; //cada vez que el noteid cambie, cambia el codigo, gracias al useparams
-    const fetchNote = async () => {
-      try {
-        const response = await fetch(`https://supreme-space-chainsaw-r4wwrjwvrwxj2ww-3001.app.github.dev/api/notes/${noteId}`);
-        if (response.ok) {
-          const data = await response.json();
-          setNote(data); //si el fetch fue un exito actualizamos con los datos de notas
-        } else {
-          console.error("Error al obtener la nota.");
-        }
-      } catch (error) {
-        console.error("Error en la conexión:", error);
-      }
-    };
+    if (!id) return;
 
-//para mostrar todos los comentarios
-    const fetchComments = async () => {
     const fetchNoteAndComments = async () => {
       try {
         setLoading(true);
-        
+
         console.log("Fetching note with ID:", id);
-        
+
         const noteResponse = await fetch(`${backendUrl}/api/notes/${id}`);
         console.log("Note response status:", noteResponse.status);
-        
+
         if (noteResponse.ok) {
           const noteData = await noteResponse.json();
           console.log("Note data:", noteData);
@@ -52,10 +35,10 @@ const NoteDetail = () => {
           }
           return;
         }
-        
+
         const commentsResponse = await fetch(`${backendUrl}/api/notes/${id}/comments`);
         console.log("Comments response status:", commentsResponse.status);
-        
+
         if (commentsResponse.ok) {
           const commentsData = await commentsResponse.json();
           console.log("Comments data:", commentsData);
@@ -70,15 +53,11 @@ const NoteDetail = () => {
         setLoading(false);
       }
     };
-    
-    if (id) {
-      fetchNoteAndComments();
-    }
+
+    fetchNoteAndComments();
   }, [id, backendUrl]);
 
-  const handleCommentChange = (e) => {
-    setCommentText(e.target.value);
-  };
+  const handleCommentChange = (e) => setCommentText(e.target.value);
 
   const handlePostComment = async () => {
     const token = sessionStorage.getItem("token") || localStorage.getItem("token");
@@ -92,14 +71,10 @@ const NoteDetail = () => {
       return;
     }
 
-    const commentData = {
-      content: commentText,
-    };
+    const commentData = { content: commentText };
 
     try {
       console.log("Posting comment to note ID:", id);
-      console.log("Datos enviados al backend:", JSON.stringify(commentData));
-      
       const response = await fetch(`${backendUrl}/api/notes/${id}/comments`, {
         method: "POST",
         headers: {
@@ -108,8 +83,6 @@ const NoteDetail = () => {
         },
         body: JSON.stringify(commentData),
       });
-
-      console.log("Comment post response status:", response.status);
 
       if (response.ok) {
         const newComment = await response.json();
@@ -132,22 +105,19 @@ const NoteDetail = () => {
     }
   };
 
-  // Función para manejar la edición de comentarios
   const handleEditComment = (commentId, currentContent) => {
     setEditingCommentId(commentId);
     setEditedContent(currentContent);
   };
 
-  // Función para cancelar edición
   const handleCancelEdit = () => {
     setEditingCommentId(null);
     setEditedContent("");
   };
 
-  // Función para guardar comentario editado
   const handleSaveEdit = async (commentId) => {
     const token = sessionStorage.getItem("token") || localStorage.getItem("token");
-    
+
     if (!token) {
       alert("Debes iniciar sesión para editar comentarios.");
       return;
@@ -190,25 +160,20 @@ const NoteDetail = () => {
     }
   };
 
-  // Función para eliminar comentario
   const handleDeleteComment = async (commentId) => {
     const token = sessionStorage.getItem("token") || localStorage.getItem("token");
-    
+
     if (!token) {
       alert("Debes iniciar sesión para eliminar comentarios.");
       return;
     }
 
-    if (!window.confirm("¿Estás seguro de que quieres eliminar este comentario?")) {
-      return;
-    }
+    if (!window.confirm("¿Estás seguro de que quieres eliminar este comentario?")) return;
 
     try {
       const response = await fetch(`${backendUrl}/api/comments/${commentId}`, {
         method: "DELETE",
-        headers: {
-          "Authorization": `Bearer ${token}`,
-        },
+        headers: { "Authorization": `Bearer ${token}` },
       });
 
       if (response.ok) {
@@ -233,7 +198,6 @@ const NoteDetail = () => {
   const getCurrentUserId = () => {
     const token = sessionStorage.getItem("token") || localStorage.getItem("token");
     if (!token) return null;
-    
     try {
       const payload = JSON.parse(atob(token.split('.')[1]));
       return payload.sub ? payload.sub.toString() : null;
@@ -244,51 +208,35 @@ const NoteDetail = () => {
   };
 
   const currentUserId = getCurrentUserId();
+  const isCommentAuthor = (commentUserId) => currentUserId && commentUserId.toString() === currentUserId;
 
-  // Verificar si el usuario actual es el autor del comentario
-  const isCommentAuthor = (commentUserId) => {
-    return currentUserId && commentUserId.toString() === currentUserId;
-  };
-
-  if (loading) {
-    return <div className="text-center mt-5">Cargando nota...</div>;
-  }
-
-  if (!note) {
-    return <div className="text-center mt-5">La nota no existe.</div>;
-  }
+  if (loading) return <div className="text-center mt-5">Cargando nota...</div>;
+  if (!note) return <div className="text-center mt-5">La nota no existe.</div>;
 
   return (
     <div className="row">
       <div className="col-6 m-auto bg-danger-subtle rounded-strong">
         <h1 className="ms-5">{note.title}</h1>
         <p className="m-2">{note.content}</p>
-        
+
         <div>
           {note.tags && note.tags.map((tag, index) => (
-            <button key={index} type="button" className="btn btn-outline-primary m-1">
-              {tag}
-            </button>
+            <button key={index} type="button" className="btn btn-outline-primary m-1">{tag}</button>
           ))}
         </div>
-        
+
         <div className="mb-3">
-          <label htmlFor="exampleFormControlTextarea1" className="form-label">
-            <strong>Agregar un comentario</strong>
-          </label>
+          <label className="form-label"><strong>Agregar un comentario</strong></label>
           <textarea
             className="form-control"
-            id="exampleFormControlTextarea1"
             rows="3"
             placeholder="En que estas pensando?"
             value={commentText}
             onChange={handleCommentChange}
           ></textarea>
-          <button onClick={handlePostComment} className="btn btn-primary mt-2">
-            Publicar
-          </button>
+          <button onClick={handlePostComment} className="btn btn-primary mt-2">Publicar</button>
         </div>
-        
+
         <div>
           <h4>Comentarios ({comments.length})</h4>
           {comments.map((comment) => (
@@ -298,7 +246,6 @@ const NoteDetail = () => {
                   <h6 className="card-subtitle text-muted">
                     {comment.first_name} {comment.last_name} (@{comment.username})
                   </h6>
-                  
                   {isCommentAuthor(comment.user_id) && (
                     <div className="btn-group">
                       {editingCommentId !== comment.comment_id && (
@@ -306,23 +253,17 @@ const NoteDetail = () => {
                           <button 
                             className="btn btn-sm btn-outline-primary"
                             onClick={() => handleEditComment(comment.comment_id, comment.content)}
-                            title="Editar comentario"
-                          >
-                            <i className="bi bi-pencil"></i> Editar
-                          </button>
+                          >Editar</button>
                           <button 
                             className="btn btn-sm btn-outline-danger"
                             onClick={() => handleDeleteComment(comment.comment_id)}
-                            title="Eliminar comentario"
-                          >
-                            <i className="bi bi-trash"></i> Eliminar
-                          </button>
+                          >Eliminar</button>
                         </>
                       )}
                     </div>
                   )}
                 </div>
-                
+
                 {editingCommentId === comment.comment_id ? (
                   <>
                     <textarea
@@ -332,29 +273,18 @@ const NoteDetail = () => {
                       rows="3"
                     />
                     <div className="d-flex gap-2">
-                      <button 
-                        className="btn btn-sm btn-success"
-                        onClick={() => handleSaveEdit(comment.comment_id)}
-                      >
-                        <i className="bi bi-check"></i> Guardar
-                      </button>
-                      <button 
-                        className="btn btn-sm btn-secondary"
-                        onClick={handleCancelEdit}
-                      >
-                        <i className="bi bi-x"></i> Cancelar
-                      </button>
+                      <button className="btn btn-sm btn-success" onClick={() => handleSaveEdit(comment.comment_id)}>Guardar</button>
+                      <button className="btn btn-sm btn-secondary" onClick={handleCancelEdit}>Cancelar</button>
                     </div>
                   </>
                 ) : (
                   <p className="card-text">{comment.content}</p>
                 )}
-                
+
                 <small className="text-muted">
                   {new Date(comment.created_at).toLocaleString()}
                   {comment.updated_at && comment.updated_at !== comment.created_at && 
-                    ` · Editado: ${new Date(comment.updated_at).toLocaleString()}`
-                  }
+                    ` · Editado: ${new Date(comment.updated_at).toLocaleString()}`}
                 </small>
               </div>
             </div>
@@ -365,5 +295,4 @@ const NoteDetail = () => {
   );
 };
 
-export default NoteDetail;
 export default NoteDetail;
