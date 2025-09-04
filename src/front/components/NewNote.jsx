@@ -1,5 +1,6 @@
 import React, { useState, useRef, useEffect } from "react";
 import "bootstrap/dist/js/bootstrap.bundle.min.js";
+import { useNavigate } from "react-router-dom";
 
 export const NewNote = () => {
   const [content, setContent] = useState("");
@@ -16,6 +17,7 @@ export const NewNote = () => {
   const mainModalRef = useRef(null);
   const tagModalRef = useRef(null);
   const loginModalRef = useRef(null);
+  const navigate = useNavigate();
 
   useEffect(() => {
     fetchTags();
@@ -117,7 +119,6 @@ export const NewNote = () => {
       return;
     }
 
-    // ✅ ahora revisa sessionStorage primero, luego localStorage
     const token = sessionStorage.getItem("token") || localStorage.getItem("token");
     if (!token) {
       hideTagModal();
@@ -155,7 +156,6 @@ export const NewNote = () => {
   };
 
   const publishNote = async () => {
-    // ✅ ahora revisa sessionStorage primero, luego localStorage
     const token = sessionStorage.getItem("token") || localStorage.getItem("token");
     if (!token) {
       showLoginModal();
@@ -192,7 +192,15 @@ export const NewNote = () => {
 
       if (response.ok) {
         alert("¡Nota publicada exitosamente!");
-        handleClose();
+        const modalElement = document.getElementById("exampleModal");
+        if (modalElement) {
+          const modal = window.bootstrap.Modal.getInstance(modalElement);
+          if (modal) {
+            modal.hide();
+          }
+        }
+        handleClose(); // Reseteamos los inputs
+        navigate("/"); // Redirigimos al usuario a la página de inicio
       } else {
         const errorData = await response.json();
         alert(`Error al publicar: ${errorData.msg || errorData.error}`);
@@ -308,7 +316,6 @@ export const NewNote = () => {
         </div>
       </div>
 
-      {/* Modal de error de login */}
       <div className="modal fade" ref={loginModalRef} tabIndex="-1" aria-hidden="true">
         <div className="modal-dialog">
           <div className="modal-content">
