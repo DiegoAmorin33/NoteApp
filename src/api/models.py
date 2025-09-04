@@ -27,8 +27,6 @@ class User(db.Model):
     favorite_notes = db.relationship("UserNoteFavorites", backref="user")
     votes = db.relationship("Votes", backref="user")
 
-    
-
     def serialize(self):
         return {
             "id": self.id,

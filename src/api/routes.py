@@ -4,6 +4,7 @@ from api.utils import generate_sitemap, APIException
 from flask_cors import CORS
 from flask_bcrypt import Bcrypt
 from flask_jwt_extended import create_access_token
+from flask_jwt_extended import create_access_token
 from flask_jwt_extended import jwt_required, get_jwt_identity
 import datetime
 
@@ -11,8 +12,8 @@ import datetime
 api = Blueprint('api', __name__)
 bcrypt = Bcrypt()
 
-# Allow CORS requests to this API
-CORS(api)
+# Permite solicitudes de CORS a esta API
+CORS(api, resources={r"/api/*": {"origins": "*"}})
 
 
 @api.route('/hello', methods=['POST', 'GET'])
@@ -62,8 +63,9 @@ def get_tags():
         })
     return jsonify(serialized_tags), 200
 
-
 # PAULO Endpoint para obtener todas las notas
+
+
 @api.route('/notes', methods=['GET'])
 def get_notes():
     all_notes = Notes.query.all()
@@ -79,49 +81,66 @@ def get_notes():
 
     return jsonify(serialized_notes), 200
 
+# PAULO Endpoint para obtener todos los comentarios de una nota
+
+
+@api.route('/notes/<int:note_id>/comments', methods=['GET'])
+def get_comments(note_id):
+    note = Notes.query.get(note_id)
+    if not note:
+        return jsonify({"msg": "La nota no existe."}), 404
+    comments_list = [comment.serialize() for comment in note.comments]
+
+    return jsonify(comments_list), 200
 
 # PAULO Endpoint para crear una nueva nota
-@api.route('/notes', methods=["POST"])
-@jwt_required()
-def create_note():
-    current_user_id = get_jwt_identity()
 
+
+@api.route('/notes', methods=["POST"])
+
+@jwt_required()  # un token activo es requerido
+
+def create_note():
+    # guardo la identidad que el jwt_required detecto
+    current_user_id = get_jwt_identity()
     body = request.get_json()
-    required_fields = ['title', 'content', 'is_anonymous', 'tags']
+    print("Datos recibidos del frontend:", body)
+    # itero y condiciono la existencia de cada field
+    required_fields = ['title', 'content', 'tags']
     if not all(field in body for field in required_fields):
         return jsonify({"msg": "Missing required fields"}), 400
 
     tag_names = body.get('tags')
 
-    if not isinstance(tag_names, list):
+    if not isinstance(tag_names, list):  # valido que el tag sea una lista
         return jsonify({"msg": "Los tags deben ser una lista"}), 400
 
     new_note = Notes(
         title=body.get('title'),
         content=body.get('content'),
-        user_id=current_user_id,
-        is_anonymous=body.get('is_anonymous')
+        user_id=current_user_id,  # id del token
+        is_anonymous=False,
     )
 
     try:
         for tag_name in tag_names:
+            # buscamos el tag seleccionado que vino del body y devuelve el primer resultado que encuentre
             tag = Tags.query.filter_by(name=tag_name).first()
             if not tag:
                 return jsonify({"msg": f"El tag '{tag_name}' no existe."}), 400
             new_note.tags.append(tag)
 
         db.session.add(new_note)
-        db.session.commit()
-    except Exception as e:
+        db.session.commit()  # guardamos
+    except Exception as e:  # si el guardado falla, nos vamos a cero
         db.session.rollback()
         return jsonify({"msg": f"An error occurred: {str(e)}"}), 500
 
-    return jsonify({
+    return jsonify({  # todo ok en el try, construimos un diccionarios con los datos obtenidos
         "note_id": new_note.note_id,
         "title": new_note.title,
         "content": new_note.content,
         "user_id": new_note.user_id,
-        "is_anonymous": new_note.is_anonymous,
         "tags": [tag.name for tag in new_note.tags]
     }), 201
 
@@ -148,12 +167,11 @@ def create_user():
     if User.query.filter_by(username=username).first():
         return jsonify({"error": "El nombre de usuario ya está en uso"}), 400
 
-
     hashed_password = bcrypt.generate_password_hash(password).decode('utf-8')
-    
+
     new_user = User(
         email=email,
-        #password_hash=password,
+        # password_hash=password,
         password_hash=hashed_password,
         first_name=first_name,
         last_name=last_name,
@@ -168,6 +186,28 @@ def create_user():
     db.session.commit()
 
     return jsonify({"message": "Usuario creado exitosamente"}), 201
+
+
+
+@api.route('/token', methods=['POST'])
+def create_token():
+
+    email = request.json.get("email", None)
+    password = request.json.get("password", None)
+
+    user = User.query.filter_by(email=email).first()
+
+    if user is None:
+        return jsonify({"error": "Email o contraseña invalida"}), 401
+
+    if not bcrypt.check_password_hash(user.password_hash, password):
+        return jsonify({"error": "Email o contraseña invalida"}), 401
+    
+   
+    access_token = create_access_token(identity=user.id)
+   
+    
+    return jsonify(access_token=access_token)
 
 # Endpoint para obtener todos los usuarios
 
@@ -185,8 +225,8 @@ def get_all_users():
 def create_comment(note_id):
     current_user_id = int(get_jwt_identity())
     body = request.get_json()
-    comment_text = body.get('comment')
-    if not comment_text:
+    comment_content = body.get('content')
+    if not comment_content:
         return jsonify({"msg": "El comentario no puede estar vacío."}), 400
 
     note = Notes.query.get(note_id)
@@ -248,8 +288,8 @@ def create_token():
     try:
         db.session.commit()
         return jsonify({
-            "id": new_comment.id,
-            "comment": new_comment.comment,
+            "id": new_comment.comment_id,
+            "content": new_comment.content,
             "user_id": new_comment.user_id,
             "note_id": new_comment.note_id
         }), 201
@@ -307,7 +347,6 @@ def get_comments(note_id):
 
 
 #endpoint para perfil
-
 @api.route('/profile', methods=['GET'])
 @jwt_required() 
 def get_profile():
@@ -320,6 +359,39 @@ def get_profile():
     
     return jsonify(id=user.id, username=user.username, first_name=user.first_name, last_name=user.last_name, email=user.email)
 
+
+    return jsonify(access_token=access_token)
+
+
+@api.route('/notes/<int:note_id>', methods=['GET'])
+def get_note_by_id(note_id):
+    note = Notes.query.get(note_id)
+    if not note:
+        return jsonify({"msg": "Nota no encontrada"}), 404
+    serialized_note = {
+        "note_id": note.note_id,
+        "title": note.title,
+        "content": note.content,
+        "user_id": note.user_id,
+        "tags": [{"tag_id": tag.tag_id, "name": tag.name} for tag in note.tags]
+    }
+
+    return jsonify(serialized_note), 200
+
+# Endpoint para actualizar la bio del usuario
+@api.route('/profile/bio', methods=['PUT'])
+@jwt_required()
+def update_user_bio():
+    current_user_id = get_jwt_identity()
+    user = User.query.get(current_user_id)
+    
+    data = request.get_json()
+    bio = data.get('bio', '')
+    
+    user.bio = bio
+    db.session.commit()
+    
+    return jsonify({"message": "Bio actualizada exitosamente", "bio": user.bio}), 200
 # Endpoint para editar un comentario existente (solo el dueño puede editarlo)
 @api.route('/comments/<int:comment_id>', methods=['PUT'])
 @jwt_required()

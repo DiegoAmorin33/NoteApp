@@ -1,7 +1,106 @@
-import useGlobalReducer from "../hooks/useGlobalReducer.jsx";
+import { useState, useEffect } from "react";
+import { Link } from "react-router-dom";
 
 export const Profile = () => {
- const { store, dispatch } = useGlobalReducer()
+  const [userNotes, setUserNotes] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [userProfile, setUserProfile] = useState(null);
+  const [bio, setBio] = useState("");
+  const [isEditingBio, setIsEditingBio] = useState(false);
+
+  // Función para obtener la información del perfil del usuario
+  const fetchUserProfile = async () => {
+    try {
+      const token = localStorage.getItem("token");
+
+      const response = await fetch(
+        import.meta.env.VITE_BACKEND_URL + "/api/profile",
+        {
+          method: "GET",
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
+          },
+        }
+      );
+
+      if (response.ok) {
+        const profile = await response.json();
+        setUserProfile(profile);
+        setBio(profile.bio || "");
+      }
+    } catch (error) {
+      console.error("Error fetching user profile:", error);
+    }
+  };
+
+  // Función para actualizar la bio del usuario
+  const updateBio = async () => {
+    try {
+      const token = localStorage.getItem("token");
+      if (!token) {
+        console.error("No token found");
+        return;
+      }
+
+      const response = await fetch(
+        import.meta.env.VITE_BACKEND_URL + "/api/profile/bio",
+        {
+          method: "PUT",
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ bio: bio }),
+        }
+      );
+
+      if (response.ok) {
+        setIsEditingBio(false);
+        // Actualizar el perfil local
+        setUserProfile((prev) => ({ ...prev, bio: bio }));
+      } else {
+        console.error("Error updating bio:", response.statusText);
+      }
+    } catch (error) {
+      console.error("Error updating bio:", error);
+    }
+  };
+
+  // Función para obtener las notas del usuario
+  const fetchUserNotes = async () => {
+    try {
+      const token = localStorage.getItem("token");
+      if (!token) {
+        console.error("No token found");
+        return;
+      }
+
+      const response = await fetch(
+        import.meta.env.VITE_BACKEND_URL + "/api/profile/notes",
+        {
+          method: "GET",
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
+          },
+        }
+      );
+
+      if (response.ok) {
+        const notes = await response.json();
+        setUserNotes(notes);
+      }
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Cargar las notas cuando el componente se monta
+  useEffect(() => {
+    fetchUserProfile();
+    fetchUserNotes();
+  }, []);
 
   return (
     <>
@@ -18,7 +117,6 @@ export const Profile = () => {
         }}
       >
         <section id="content" className="container">
-
           <div className="page-heading">
             <div className="media clearfix">
               <div className="media-left pr30"></div>
@@ -44,10 +142,10 @@ export const Profile = () => {
                       >
                         <div className="text-center">
                           <i className="fa fa-camera fa-2x text-muted mb-2"></i>
-                          <p className="text-muted small mb-0">
-                            Postear
+                          <p className="text-muted small mb-0">Postear</p>
+                          <p className="text-muted small">
+                            Foto de Perfil(avatar predeterminado?)
                           </p>
-                          <p className="text-muted small">Foto de Perfil(avatar predeterminado?)</p>
                         </div>
                         <input
                           type="file"
@@ -64,99 +162,135 @@ export const Profile = () => {
                         />
                       </div>
                       <div className="mt-3">
-                        <h4 className="mb-1">Usuario</h4>
-                        <p className="text-muted small">Perfil</p>
+                        <h4 className="mb-1">
+                          {userProfile ? userProfile.username : "Cargando..."}
+                        </h4>
+                        <p className="text-muted">
+                          {userProfile
+                            ? `${userProfile.first_name} ${userProfile.last_name}`
+                            : "Perfil"}
+                        </p>
                       </div>
                     </div>
                   </div>
                   <div className="col-md-9">
                     <div className="profile-description">
-                      <label
-                        htmlFor="profileDescription"
-                        className="form-label"
-                      >
-                        <strong>Sobre mi</strong>
-                      </label>
+                      <div className="d-flex justify-content-between align-items-center mb-2">
+                        <label
+                          htmlFor="profileDescription"
+                          className="form-label mb-0"
+                        >
+                          <strong>Sobre mi</strong>
+                        </label>
+                        {!isEditingBio ? (
+                          <button
+                            className="btn btn-sm btn-outline-primary"
+                            onClick={() => setIsEditingBio(true)}
+                          >
+                            Editar
+                          </button>
+                        ) : (
+                          <div>
+                            <button
+                              className="btn btn-sm btn-success me-2"
+                              onClick={updateBio}
+                            >
+                              Guardar
+                            </button>
+                            <button
+                              className="btn btn-sm btn-secondary"
+                              onClick={() => {
+                                setIsEditingBio(false);
+                                setBio(userProfile?.bio || "");
+                              }}
+                            >
+                              Cancelar
+                            </button>
+                          </div>
+                        )}
+                      </div>
                       <textarea
                         id="profileDescription"
                         className="form-control"
                         rows="6"
-                        placeholder="A Little bit about me!"
+                        placeholder="Un poco sobre mi!"
+                        value={bio}
+                        onChange={(e) => setBio(e.target.value)}
+                        readOnly={!isEditingBio}
                         style={{
                           resize: "vertical",
                           minHeight: "140px",
                           borderColor: "#dee2e6",
                           boxShadow: "0 2px 4px rgba(0, 0, 0, 0.1)",
-                          backgroundColor: "#fff",
+                          backgroundColor: isEditingBio ? "#fff" : "#f8f9fa",
+                          cursor: isEditingBio ? "text" : "default",
                         }}
-                      ></textarea>
+                      />
                     </div>
                   </div>
                 </div>
 
-                {/* Editar para conectar con notes*/}
+                {/* Notas del usuario */}
                 <div className="row mt-5 justify-content-center">
-                  <div className="col-lg-4 col-md-6 mb-4 d-flex justify-content-center">
-                    <div
-                      className="card h-100"
-                      style={{ width: "100%", maxWidth: "24rem" }}
-                    >
-                      <div className="card-body d-flex flex-column">
-                        <h5 className="card-title">My Skibidi</h5>
-                        <h6 className="card-subtitle mb-3 text-body-secondary">
-                          Sigma
-                        </h6>
-                        <p className="card-text flex-grow-1">
-                        Sigmasious 16 plus waoooo
-                        </p>
-                        <div className="mt-auto">
-                        <a href="#" class="btn btn-primary">BupBup</a>
-                        </div>
-                      </div>
+                  {loading ? (
+                    <div className="col-12 text-center">
+                      <p>Cargando notas...</p>
                     </div>
-                  </div>
-
-                  <div className="col-lg-4 col-md-6 mb-4 d-flex justify-content-center">
-                    <div
-                      className="card h-100"
-                      style={{ width: "100%", maxWidth: "24rem" }}
-                    >
-                      <div className="card-body d-flex flex-column">
-                        <h5 className="card-title">My Skibidi</h5>
-                        <h6 className="card-subtitle mb-3 text-body-secondary">
-                          Sigma
-                        </h6>
-                        <p className="card-text flex-grow-1">
-                        Sigmasious 16 plus waoooo
-                        </p>
-                        <div className="mt-auto">
-                        <a href="#" class="btn btn-primary">BupBup</a>
-                        </div>
-                      </div>
+                  ) : userNotes.length === 0 ? (
+                    <div className="col-12 text-center">
+                      <p>Aqui van tus notas!</p>
                     </div>
-                  </div>
+                  ) : (
+                    userNotes.map((note) => (
+                      <div
+                        key={note.note_id}
+                        className="col-lg-4 col-md-6 mb-4 d-flex justify-content-center"
+                      >
+                        <Link
+                          to={`/noteDetail/${note.note_id}`}
+                          className="text-decoration-none"
+                        >
+                          <div
+                            className="card h-100"
+                            style={{
+                              width: "100%",
+                              maxWidth: "24rem",
+                              cursor: "pointer",
+                              transition: "transform 0.2s, box-shadow 0.2s",
+                            }}
+                            onMouseEnter={(e) => {
+                              e.currentTarget.style.transform =
+                                "translateY(-5px)";
+                              e.currentTarget.style.boxShadow =
+                                "0 4px 15px rgba(0,0,0,0.2)";
+                            }}
+                            onMouseLeave={(e) => {
+                              e.currentTarget.style.transform = "translateY(0)";
+                              e.currentTarget.style.boxShadow =
+                                "0 1px 3px rgba(0,0,0,0.12)";
+                            }}
+                          >
+                            <div className="card-body d-flex flex-column">
+                              <h5 className="card-title text-dark">
+                                {note.title}
+                              </h5>
 
-                  <div className="col-lg-4 col-md-6 mb-4 d-flex justify-content-center">
-                    <div
-                      className="card h-100"
-                      style={{ width: "100%", maxWidth: "24rem" }}
-                    >
-                      <div className="card-body d-flex flex-column">
-                        <h5 className="card-title">My Skibidi</h5>
-                        <h6 className="card-subtitle mb-3 text-body-secondary">
-                          Sigma
-                        </h6>
-                        <p className="card-text flex-grow-1">
-                          Sigmasious 16 plus waoooo
-                        </p>
-                        <div className="mt-auto">
-                        <a href="#" class="btn btn-primary">BupBup</a>
-                        </div>
+                              <p className="card-text flex-grow-1 text-muted">
+                                {note.content.length > 100
+                                  ? `${note.content.substring(0, 100)}...`
+                                  : note.content}
+                              </p>
+                              <div className="mt-auto">
+                                <span className="btn btn-primary btn-sm">
+                                  Ver más
+                                </span>
+                              </div>
+                            </div>
+                          </div>
+                        </Link>
                       </div>
-                    </div>
-                  </div>
-
-                  
+                    ))
+                  )}
                 </div>
               </div>
             </div>

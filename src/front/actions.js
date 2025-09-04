@@ -154,18 +154,13 @@ export const actions = (dispatch) => ({
             });
     },
 
-    /**
-     * Cierra la sesión del usuario, eliminando el token.
-     */
+   
     logout: () => {
         console.log("Logging out...");
         sessionStorage.removeItem("token");
         dispatch({ type: 'LOGOUT' });
     },
-
-    /**
-     * Obtener los datos del perfil del usuario autenticado.
-     */
+    
     getUser: (token) => {
         if (!token) {
             console.error("No token provided for getUser");
