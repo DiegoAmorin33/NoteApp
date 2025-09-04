@@ -50,6 +50,8 @@ def create_tag():
 
 # PAULO Endpoint para ver todos los tags
 
+# PAULO Endpoint para obtener todas las notas
+
 
 @api.route('/tags', methods=['GET'])
 def get_tags():
@@ -61,8 +63,6 @@ def get_tags():
             "name": tag.name
         })
     return jsonify(serialized_tags), 200
-
-# PAULO Endpoint para obtener todas las notas
 
 
 @api.route('/notes', methods=['GET'])
@@ -91,55 +91,44 @@ def get_comments(note_id):
     return jsonify(comments_list), 200
 
 # PAULO Endpoint para crear una nueva nota
-
-
 @api.route('/notes', methods=["POST"])
-
 @jwt_required()  # un token activo es requerido
-
 def create_note():
-    # guardo la identidad que el jwt_required detecto
     current_user_id = get_jwt_identity()
     body = request.get_json()
     print("Datos recibidos del frontend:", body)
-    # itero y condiciono la existencia de cada field
+
     required_fields = ['title', 'content', 'tags']
     if not all(field in body for field in required_fields):
         return jsonify({"msg": "Missing required fields"}), 400
 
     tag_names = body.get('tags')
 
-    if not isinstance(tag_names, list):  # valido que el tag sea una lista
-        return jsonify({"msg": "Los tags deben ser una lista"}), 400
+    if not isinstance(tag_names, list) or not tag_names:
+        return jsonify({"msg": "Los tags deben ser una lista no vacía"}), 400
 
     new_note = Notes(
         title=body.get('title'),
         content=body.get('content'),
-        user_id=current_user_id,  # id del token
+        user_id=current_user_id,
         is_anonymous=False,
     )
 
     try:
         for tag_name in tag_names:
-            # buscamos el tag seleccionado que vino del body y devuelve el primer resultado que encuentre
             tag = Tags.query.filter_by(name=tag_name).first()
             if not tag:
                 return jsonify({"msg": f"El tag '{tag_name}' no existe."}), 400
             new_note.tags.append(tag)
 
         db.session.add(new_note)
-        db.session.commit()  # guardamos
-    except Exception as e:  # si el guardado falla, nos vamos a cero
+        db.session.commit()
+    except Exception as e:
         db.session.rollback()
         return jsonify({"msg": f"An error occurred: {str(e)}"}), 500
 
-    return jsonify({  # todo ok en el try, construimos un diccionarios con los datos obtenidos
-        "note_id": new_note.note_id,
-        "title": new_note.title,
-        "content": new_note.content,
-        "user_id": new_note.user_id,
-        "tags": [tag.name for tag in new_note.tags]
-    }), 201
+    # Utiliza el método serialize() de la instancia de Notes
+    return jsonify(new_note.serialize()), 201
 
 
 @api.route('/user', methods=['POST'])
@@ -176,14 +165,13 @@ def create_user():
         is_active=True
     )
 
-    #hashed_password = bcrypt.generate_password_hash(password)
-    #User.password = hashed_password
+    # hashed_password = bcrypt.generate_password_hash(password)
+    # User.password = hashed_password
 
     db.session.add(new_user)
     db.session.commit()
 
     return jsonify({"message": "Usuario creado exitosamente"}), 201
-
 
 
 @api.route('/token', methods=['POST'])
@@ -199,11 +187,8 @@ def create_token():
 
     if not bcrypt.check_password_hash(user.password_hash, password):
         return jsonify({"error": "Email o contraseña invalida"}), 401
-    
-   
-    access_token = create_access_token(identity=user.id)
-   
-    
+
+    access_token = create_access_token(identity=str(user.id))
     return jsonify(access_token=access_token)
 
 # Endpoint para obtener todos los usuarios
@@ -218,7 +203,6 @@ def get_all_users():
     return jsonify(serialized_users), 200
 
 # PAULO Endpoint para crear un nuevo comentario en una nota
-
 
 
 @api.route('/notes/<int:note_id>/comments', methods=["POST"])
@@ -248,25 +232,18 @@ def create_comment(note_id):
         db.session.rollback()
         return jsonify({"msg": f"Ocurrió un error inesperado: {str(e)}"}), 500
 
-# PAULO Endpoint para obtener todos los comentarios de una nota
 
-
-
-
-#endpoint para perfil
+# endpoint para perfil
 @api.route('/profile', methods=['GET'])
-@jwt_required() 
+@jwt_required()
 def get_profile():
     current_user_id = get_jwt_identity()
     user = User.query.get(current_user_id)
 
     if user is None:
         return jsonify({"error": "Usuario no encontrado"}), 404
-    
+
     return jsonify(id=user.id, username=user.username, first_name=user.first_name, last_name=user.last_name, email=user.email)
-
-
-    return jsonify(access_token=access_token)
 
 
 @api.route('/notes/<int:note_id>', methods=['GET'])
@@ -283,4 +260,3 @@ def get_note_by_id(note_id):
     }
 
     return jsonify(serialized_note), 200
-  

@@ -1,5 +1,6 @@
 import React, { useState, useRef, useEffect } from "react";
 import "bootstrap/dist/js/bootstrap.bundle.min.js";
+import { useNavigate } from "react-router-dom";
 
 export const NewNote = () => {
   const [content, setContent] = useState("");
@@ -8,6 +9,7 @@ export const NewNote = () => {
   const [title, setTitle] = useState("");
   const [selectedTag, setSelectedTag] = useState(null);
   const [showLoginErrorModal, setShowLoginErrorModal] = useState(false);
+  const navigate = useNavigate();
 
   // Hook para obtener los tags de la API al cargar el componente
   useEffect(() => {
@@ -75,7 +77,7 @@ export const NewNote = () => {
     const noteData = {
       title: title,
       content: content,
-      tags: [selectedTag], 
+      tags: [selectedTag],
     };
 
     try {
@@ -98,6 +100,7 @@ export const NewNote = () => {
           }
         }
         handleClose(); // Reseteamos los inputs
+        navigate("/"); // Redirigimos al usuario a la página de inicio
       } else {
         const errorData = await response.json();
         alert(`Error al publicar la nota: ${errorData.msg}`);
@@ -121,7 +124,7 @@ export const NewNote = () => {
 
       {/* Modal para crear una nota */}
       <div
-        className="modal fade"
+        className="modal"
         id="exampleModal"
         tabIndex="-1"
         aria-labelledby="exampleModalLabel"
@@ -210,6 +213,7 @@ export const NewNote = () => {
               </div>
               <div className="modal-footer">
                 <button type="button" className="btn btn-secondary" onClick={() => setShowLoginErrorModal(false)}>Cerrar</button>
+
               </div>
             </div>
           </div>
