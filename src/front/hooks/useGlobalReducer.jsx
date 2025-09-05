@@ -22,3 +22,4 @@ export default function useGlobalReducer() {
     const { store, actions } = useContext(StoreContext);
     return { store, actions };
 }
+

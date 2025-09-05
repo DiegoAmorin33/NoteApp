@@ -23,11 +23,11 @@ const LoginForm = () => {
         }
 
         actions.login(email, password)
-            .then(loggedIn => {
-                console.log(loggedIn)
+            .then(async (loggedIn) => {
                 if (loggedIn) {
-                    // Si el login es exitoso, obtenemos los datos del usuario
                     alert("¡Inicio de sesión exitoso!");
+                    const token = sessionStorage.getItem("token");
+                    await actions.getUser (token);  // Actualiza el store con el usuario
                     navigate("/profile");
                 } else {
                     setError("Email o Contraseña inválida");
@@ -40,7 +40,6 @@ const LoginForm = () => {
             <div className="row vh-100 d-flex align-items-center">
 
                 <div className="col-md-4 col-lg-4 d-none d-md-block h-100 sidebar-custom-color"></div>
-
 
                 <div className="col-12 col-md-4 col-lg-4">
                     <form onSubmit={handleLogin} className="p-4">
@@ -93,7 +92,6 @@ const LoginForm = () => {
                         </p>
                     </form>
                 </div>
-
 
                 <div className="col-md-4 col-lg-4 d-none d-md-block h-100 sidebar-custom-color"></div>
             </div>

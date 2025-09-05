@@ -2,7 +2,9 @@ import React, { useState, useRef, useEffect } from "react";
 import "bootstrap/dist/js/bootstrap.bundle.min.js";
 import { useNavigate } from "react-router-dom";
 
-export const NewNote = () => {
+const backendUrl = import.meta.env.VITE_BACKEND_URL;
+
+const NewNote = () => {
   const [content, setContent] = useState("");
   const textareaRef = useRef(null);
   const [availableTags, setAvailableTags] = useState([]);
@@ -11,11 +13,11 @@ export const NewNote = () => {
   const [showLoginErrorModal, setShowLoginErrorModal] = useState(false);
   const navigate = useNavigate();
 
-  // Hook para obtener los tags de la API al cargar el componente
+  
   useEffect(() => {
     const fetchTags = async () => {
       try {
-        const response = await fetch("https://supreme-space-chainsaw-r4wwrjwvrwxj2ww-3001.app.github.dev/api/tags");
+        const response = await fetch(`${backendUrl}api/tags`);
         if (response.ok) {
           const data = await response.json();
           setAvailableTags(data);
@@ -29,23 +31,16 @@ export const NewNote = () => {
     fetchTags();
   }, []);
 
-  // Hook para ajustar el tamaño del textarea cuando cambia el contenido
+  
   useEffect(() => {
     if (textareaRef.current) {
       textareaRef.current.style.height = "auto";
-      textareaRef.current.style.height =
-        textareaRef.current.scrollHeight + "px";
+      textareaRef.current.style.height = textareaRef.current.scrollHeight + "px";
     }
   }, [content]);
 
-
-  const handleContentChange = (e) => {
-    setContent(e.target.value);
-  };
-
-  const handleTitleChange = (e) => {
-    setTitle(e.target.value);
-  };
+  const handleContentChange = (e) => setContent(e.target.value);
+  const handleTitleChange = (e) => setTitle(e.target.value);
 
   const handleTagClick = (tagName) => {
     setSelectedTag(tagName === selectedTag ? null : tagName);
@@ -56,14 +51,11 @@ export const NewNote = () => {
     setTitle("");
     setSelectedTag(null);
     setShowLoginErrorModal(false);
-  }; //prueba
-
+  };
 
   const publishNote = async () => {
-    // la recomendacion es que se use global reducer, pero lo vi muy complicado y lo deje asi
     const token = sessionStorage.getItem("token");
 
-    // Verificamos que exista una sesion iniciada
     if (!token) {
       setShowLoginErrorModal(true);
       return;
@@ -75,17 +67,17 @@ export const NewNote = () => {
     }
 
     const noteData = {
-      title: title,
-      content: content,
+      title,
+      content,
       tags: [selectedTag],
     };
 
     try {
-      const response = await fetch("https://supreme-space-chainsaw-r4wwrjwvrwxj2ww-3001.app.github.dev/api/notes", {
+      const response = await fetch(`${backendUrl}api/notes`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          "Authorization": `Bearer ${token}`
+          Authorization: `Bearer ${token}`,
         },
         body: JSON.stringify(noteData),
       });
@@ -95,15 +87,13 @@ export const NewNote = () => {
         const modalElement = document.getElementById("exampleModal");
         if (modalElement) {
           const modal = window.bootstrap.Modal.getInstance(modalElement);
-          if (modal) {
-            modal.hide();
-          }
+          if (modal) modal.hide();
         }
-        handleClose(); // Reseteamos los inputs
-        navigate("/"); // Redirigimos al usuario a la página de inicio
+        handleClose();
+        navigate("/");
       } else {
         const errorData = await response.json();
-        alert(`Error al publicar la nota: ${errorData.msg}`);
+        alert(`Error al publicar la nota: ${errorData.msg || "Error desconocido"}`);
       }
     } catch (error) {
       console.error("Error en la conexión:", error);
@@ -134,19 +124,20 @@ export const NewNote = () => {
           <div className="modal-content">
             <div className="modal-header">
               <h1 className="modal-title fs-5" id="exampleModalLabel">
-                Que deseas publicar?
+                ¿Qué deseas publicar?
               </h1>
               <button
                 type="button"
                 className="btn-close"
                 data-bs-dismiss="modal"
                 aria-label="Close"
+                onClick={handleClose}
               ></button>
             </div>
             <div className="modal-body">
               <input
                 type="text"
-                placeholder="Escribe el titulo de tu nota"
+                placeholder="Escribe el título de tu nota"
                 className="form-control form-control-lg mb-1"
                 value={title}
                 onChange={handleTitleChange}
@@ -155,7 +146,7 @@ export const NewNote = () => {
                 ref={textareaRef}
                 className="form-control form-control-lg"
                 rows="1"
-                placeholder="que quieres compartir?"
+                placeholder="¿Qué quieres compartir?"
                 value={content}
                 onChange={handleContentChange}
                 style={{ resize: "none", overflow: "hidden" }}
@@ -164,34 +155,23 @@ export const NewNote = () => {
               <p className="mt-2">Agrega un tag</p>
 
               <div className="btn-group" role="group" aria-label="Basic checkbox toggle button group">
-                <div>
-                  {availableTags.map((tag) => (
-                    <button
-                      key={tag.tag_id}
-                      type="button"
-                      className={`btn m-1 ${selectedTag === tag.name ? 'btn-primary' : 'btn-outline-primary'}`}
-                      onClick={() => handleTagClick(tag.name)}
-                    >
-                      {tag.name}
-                    </button>
-                  ))}
-                </div>
+                {availableTags.map((tag) => (
+                  <button
+                    key={tag.tag_id}
+                    type="button"
+                    className={`btn m-1 ${selectedTag === tag.name ? "btn-primary" : "btn-outline-primary"}`}
+                    onClick={() => handleTagClick(tag.name)}
+                  >
+                    {tag.name}
+                  </button>
+                ))}
               </div>
             </div>
             <div className="modal-footer">
-              <button
-                type="button"
-                className="btn btn-secondary"
-                data-bs-dismiss="modal"
-                onClick={handleClose}
-              >
+              <button type="button" className="btn btn-secondary" data-bs-dismiss="modal" onClick={handleClose}>
                 Cancelar
               </button>
-              <button
-                type="button"
-                className="btn btn-primary"
-                onClick={publishNote}
-              >
+              <button type="button" className="btn btn-primary" onClick={publishNote}>
                 Publicar
               </button>
             </div>
@@ -199,9 +179,9 @@ export const NewNote = () => {
         </div>
       </div>
 
-      {/*Modal de error para el inicio de sesión */}
+      {/* Modal de error para el inicio de sesión */}
       {showLoginErrorModal && (
-        <div className="modal fade show" style={{ display: 'block' }} tabIndex="-1">
+        <div className="modal fade show" style={{ display: "block" }} tabIndex="-1">
           <div className="modal-dialog">
             <div className="modal-content">
               <div className="modal-header">
@@ -212,8 +192,9 @@ export const NewNote = () => {
                 <p>Debes iniciar sesión para poder publicar notas.</p>
               </div>
               <div className="modal-footer">
-                <button type="button" className="btn btn-secondary" onClick={() => setShowLoginErrorModal(false)}>Cerrar</button>
-
+                <button type="button" className="btn btn-secondary" onClick={() => setShowLoginErrorModal(false)}>
+                  Cerrar
+                </button>
               </div>
             </div>
           </div>

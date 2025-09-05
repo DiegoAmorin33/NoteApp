@@ -166,7 +166,7 @@ def create_user():
     )
 
     # hashed_password = bcrypt.generate_password_hash(password)
-    # User.password = hashed_password
+    #User.password = hashed_password
 
     db.session.add(new_user)
     db.session.commit()

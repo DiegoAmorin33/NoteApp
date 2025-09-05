@@ -1,64 +1,65 @@
-import { useState, useEffect } from "react";
+import React, { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 
-export const Profile = () => {
+const backendUrl = import.meta.env.VITE_BACKEND_URL;
+
+const Profile = () => {
   const [userNotes, setUserNotes] = useState([]);
   const [loading, setLoading] = useState(true);
   const [userProfile, setUserProfile] = useState(null);
   const [bio, setBio] = useState("");
   const [isEditingBio, setIsEditingBio] = useState(false);
 
-  // Función para obtener la información del perfil del usuario
+  // Obtener perfil del usuario
   const fetchUserProfile = async () => {
     try {
-      const token = localStorage.getItem("token");
+      const token = sessionStorage.getItem("token");
+      if (!token) {
+        console.error("No token found");
+        return;
+      }
 
-      const response = await fetch(
-        import.meta.env.VITE_BACKEND_URL + "/api/profile",
-        {
-          method: "GET",
-          headers: {
-            Authorization: `Bearer ${token}`,
-            "Content-Type": "application/json",
-          },
-        }
-      );
+      const response = await fetch(`${backendUrl}api/profile`, {
+        method: "GET",
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+      });
 
       if (response.ok) {
         const profile = await response.json();
         setUserProfile(profile);
         setBio(profile.bio || "");
+      } else {
+        console.error("Error fetching profile:", response.statusText);
       }
     } catch (error) {
       console.error("Error fetching user profile:", error);
     }
   };
 
-  // Función para actualizar la bio del usuario
+  // Actualizar bio del usuario
   const updateBio = async () => {
     try {
-      const token = localStorage.getItem("token");
+      const token = sessionStorage.getItem("token");
       if (!token) {
         console.error("No token found");
         return;
       }
 
-      const response = await fetch(
-        import.meta.env.VITE_BACKEND_URL + "/api/profile/bio",
-        {
-          method: "PUT",
-          headers: {
-            Authorization: `Bearer ${token}`,
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({ bio: bio }),
-        }
-      );
+      const response = await fetch(`${backendUrl}api/profile/bio`, {
+        method: "PUT",
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ bio }),
+      });
 
       if (response.ok) {
         setIsEditingBio(false);
-        // Actualizar el perfil local
-        setUserProfile((prev) => ({ ...prev, bio: bio }));
+        setUserProfile((prev) => ({ ...prev, bio }));
       } else {
         console.error("Error updating bio:", response.statusText);
       }
@@ -67,36 +68,36 @@ export const Profile = () => {
     }
   };
 
-  // Función para obtener las notas del usuario
+  // Obtener notas del usuario
   const fetchUserNotes = async () => {
     try {
-      const token = localStorage.getItem("token");
+      const token = sessionStorage.getItem("token");
       if (!token) {
         console.error("No token found");
         return;
       }
 
-      const response = await fetch(
-        import.meta.env.VITE_BACKEND_URL + "/api/profile/notes",
-        {
-          method: "GET",
-          headers: {
-            Authorization: `Bearer ${token}`,
-            "Content-Type": "application/json",
-          },
-        }
-      );
+      const response = await fetch(`${backendUrl}api/profile/notes`, {
+        method: "GET",
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+      });
 
       if (response.ok) {
         const notes = await response.json();
         setUserNotes(notes);
+      } else {
+        console.error("Error fetching user notes:", response.statusText);
       }
+    } catch (error) {
+      console.error("Error fetching user notes:", error);
     } finally {
       setLoading(false);
     }
   };
 
-  // Cargar las notas cuando el componente se monta
   useEffect(() => {
     fetchUserProfile();
     fetchUserNotes();
@@ -144,7 +145,7 @@ export const Profile = () => {
                           <i className="fa fa-camera fa-2x text-muted mb-2"></i>
                           <p className="text-muted small mb-0">Postear</p>
                           <p className="text-muted small">
-                            Foto de Perfil(avatar predeterminado?)
+                            Foto de Perfil (avatar predeterminado?)
                           </p>
                         </div>
                         <input
@@ -176,10 +177,7 @@ export const Profile = () => {
                   <div className="col-md-9">
                     <div className="profile-description">
                       <div className="d-flex justify-content-between align-items-center mb-2">
-                        <label
-                          htmlFor="profileDescription"
-                          className="form-label mb-0"
-                        >
+                        <label htmlFor="profileDescription" className="form-label mb-0">
                           <strong>Sobre mi</strong>
                         </label>
                         {!isEditingBio ? (
@@ -191,10 +189,7 @@ export const Profile = () => {
                           </button>
                         ) : (
                           <div>
-                            <button
-                              className="btn btn-sm btn-success me-2"
-                              onClick={updateBio}
-                            >
+                            <button className="btn btn-sm btn-success me-2" onClick={updateBio}>
                               Guardar
                             </button>
                             <button
@@ -238,7 +233,7 @@ export const Profile = () => {
                     </div>
                   ) : userNotes.length === 0 ? (
                     <div className="col-12 text-center">
-                      <p>Aqui van tus notas!</p>
+                      <p>Aquí van tus notas!</p>
                     </div>
                   ) : (
                     userNotes.map((note) => (
@@ -246,10 +241,7 @@ export const Profile = () => {
                         key={note.note_id}
                         className="col-lg-4 col-md-6 mb-4 d-flex justify-content-center"
                       >
-                        <Link
-                          to={`/noteDetail/${note.note_id}`}
-                          className="text-decoration-none"
-                        >
+                        <Link to={`/noteDetail/${note.note_id}`} className="text-decoration-none">
                           <div
                             className="card h-100"
                             style={{
@@ -259,31 +251,23 @@ export const Profile = () => {
                               transition: "transform 0.2s, box-shadow 0.2s",
                             }}
                             onMouseEnter={(e) => {
-                              e.currentTarget.style.transform =
-                                "translateY(-5px)";
-                              e.currentTarget.style.boxShadow =
-                                "0 4px 15px rgba(0,0,0,0.2)";
+                              e.currentTarget.style.transform = "translateY(-5px)";
+                              e.currentTarget.style.boxShadow = "0 4px 15px rgba(0,0,0,0.2)";
                             }}
                             onMouseLeave={(e) => {
                               e.currentTarget.style.transform = "translateY(0)";
-                              e.currentTarget.style.boxShadow =
-                                "0 1px 3px rgba(0,0,0,0.12)";
+                              e.currentTarget.style.boxShadow = "0 1px 3px rgba(0,0,0,0.12)";
                             }}
                           >
                             <div className="card-body d-flex flex-column">
-                              <h5 className="card-title text-dark">
-                                {note.title}
-                              </h5>
-
+                              <h5 className="card-title text-dark">{note.title}</h5>
                               <p className="card-text flex-grow-1 text-muted">
                                 {note.content.length > 100
                                   ? `${note.content.substring(0, 100)}...`
                                   : note.content}
                               </p>
                               <div className="mt-auto">
-                                <span className="btn btn-primary btn-sm">
-                                  Ver más
-                                </span>
+                                <span className="btn btn-primary btn-sm">Ver más</span>
                               </div>
                             </div>
                           </div>
@@ -300,3 +284,5 @@ export const Profile = () => {
     </>
   );
 };
+
+export default Profile;

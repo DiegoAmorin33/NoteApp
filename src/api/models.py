@@ -79,7 +79,7 @@ class Notes(db.Model):
 
     def serialize(self):
         return {
-            "note_id": self.note_idid,
+            "note_id": self.note_id,
             "user_id": self.user_id,
             "title": self.title,
             "content": self.content,
@@ -132,6 +132,12 @@ class Tags(db.Model):
     name: Mapped[str] = mapped_column(String(50), unique=True, nullable=False)
     color_hex: Mapped[str] = mapped_column(String(7), nullable=True)
 
+    def serialize(self):
+        return {
+            "tag_id": self.tag_id,
+            "name": self.name,
+            "color_hex": self.color_hex,
+        }
 
 class Reports(db.Model):
     report_id: Mapped[int] = mapped_column(primary_key=True)
