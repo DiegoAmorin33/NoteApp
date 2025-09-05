@@ -8,12 +8,9 @@ import { Home } from "./pages/Home";
 import { Single } from "./pages/Single";
 import { Demo } from "./pages/Demo";
 import NoteDetail from "./pages/NoteDetail";
-
 import RegisterForm from "./pages/RegisterForm";
 import LoginForm from "./pages/LoginForm";
-
-import { Profile } from "./pages/Profile";
-
+import Profile from "./pages/Profile"; // ✅ Importación corregida
 
 export const router = createBrowserRouter(
 
@@ -28,14 +25,14 @@ export const router = createBrowserRouter(
       <Route path="/" element={<Layout />} errorElement={<h1>Not found!</h1>} >
 
         {/* Nested Routes: Defines sub-routes within the BaseHome component. */}
-        <Route path= "/" element={<Home />} />
-        <Route path= "/Profile" element={<Profile />} />
-        <Route path="/single/:theId" element={ <Single />} />  {/* Dynamic route for single items */}
+        <Route path="/" element={<Home />} />
+        <Route path="/Profile" element={<Profile />} />
+        <Route path="/single/:theId" element={<Single />} />
         <Route path="/demo" element={<Demo />} />
         <Route path="/RegisterForm" element={<RegisterForm />} />
         <Route path="/login" element={<LoginForm />} />
-        <Route path="/notes/:noteId" element={<NoteDetail />} />
-      </Route>
+        <Route path="/noteDetail/:id" element={<NoteDetail />} /> {/* ⚡ Corregido */}
+        </Route>
     )
 
 ); 
