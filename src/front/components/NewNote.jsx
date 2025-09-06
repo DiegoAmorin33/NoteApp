@@ -214,9 +214,9 @@ const NewNote = () => {
   };
 
   return (
-    <div className="container">
+    <div className="">
       {/* 🔽 Aquí sigue todo tu JSX original (botón de New Note, modales, etc.) */}
-      <button className="btn btn-primary mt-3" onClick={showMainModal}>
+      <button className="btn btn-outline-dark" onClick={showMainModal}>
         New Note
       </button>
 

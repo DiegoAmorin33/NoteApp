@@ -1,17 +1,15 @@
 import React from "react";
 import { Link, useNavigate } from "react-router-dom";
-import useGlobalReducer from "../hooks/useGlobalReducer"; // 1. Importa tu hook
+import useGlobalReducer from "../hooks/useGlobalReducer";
 import NewNote from "./NewNote";
 
 export const Navbar = () => {
-    //  hook para acceder al store y a las acciones
     const { store, actions } = useGlobalReducer();
     const navigate = useNavigate();
 
-    // función para manejar el logout
     const handleLogout = () => {
         actions.logout();
-        navigate("/"); // Redirige al inicio después de cerrar sesión
+        navigate("/");
     };
 
     return (
@@ -21,22 +19,24 @@ export const Navbar = () => {
                     <Link to="/" className="text-decoration-none text-dark">
                         <h1 className="m-0">Logo</h1>
                     </Link>
+
+                    
                     <div className="d-flex align-items-center gap-3">
                         {store.token ? (
                             <>
-                                <span className="fw-bold">
-                                    Hola, {store.user ? store.user.username : '...'}
+                                <span className="fw-bold me-2">
+                                    Hola {store.user ? store.user.username : '...'}
                                 </span>
-                                <Link to="/profile" className="btn btn-primary">
+                                <Link to="/profile" className="btn btn-outline-dark">
                                     Perfil
                                 </Link>
+                                
                                 <NewNote />
-                                <button onClick={handleLogout} className="btn btn-danger">
+                                <button onClick={handleLogout} className="btn btn-outline-danger">
                                     Cerrar Sesión
                                 </button>
                             </>
                         ) : (
-                            // Si NO HAY token (usuario no logueado)
                             <>
                                 <Link to="/about" className="nav-link text-secondary">
                                     Sobre nosotros
