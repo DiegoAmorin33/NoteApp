@@ -1,7 +1,5 @@
-import React, { useState, useEffect } from "react";
-import { Link } from "react-router-dom";
-
-const backendUrl = import.meta.env.VITE_BACKEND_URL;
+import { useState, useEffect } from "react";
+import { Link, useNavigate } from "react-router-dom";
 
 const Profile = () => {
   const [userNotes, setUserNotes] = useState([]);
@@ -9,17 +7,59 @@ const Profile = () => {
   const [userProfile, setUserProfile] = useState(null);
   const [bio, setBio] = useState("");
   const [isEditingBio, setIsEditingBio] = useState(false);
+  const navigate = useNavigate();
+
+  // Debug: Verificar todas las variables de entorno
+  console.log("🔍 Environment variables:", {
+    VITE_BACKEND_URL: import.meta.env.VITE_BACKEND_URL,
+    VITE_BASENAME: import.meta.env.VITE_BASENAME
+  });
+
+  // Debug: Verificar todo el localStorage
+  console.log("🔍 LocalStorage completo:", {
+    token: localStorage.getItem("token"),
+    allItems: { ...localStorage }
+  });
+
+  // Verificar token al cargar el componente
+  useEffect(() => {
+    const token = localStorage.getItem("token");
+    console.log("🔑 Token encontrado en useEffect:", token);
+    
+    if (!token) {
+      console.error("❌ NO HAY TOKEN - Redirigiendo a login");
+      navigate("/login");
+      return;
+    }
+    
+    console.log("✅ Token válido encontrado, cargando datos...");
+    // Si hay token, cargar los datos
+    fetchUserProfile();
+    fetchUserNotes();
+  }, [navigate]);
 
   // Obtener perfil del usuario
   const fetchUserProfile = async () => {
     try {
-      const token = sessionStorage.getItem("token");
+      const token = localStorage.getItem("token");
+      console.log("🔑 Token en fetchUserProfile:", token);
+      
       if (!token) {
-        console.error("No token found");
+        console.error("❌ No token found in fetchUserProfile");
         return;
       }
 
-      const response = await fetch(`${backendUrl}api/profile`, {
+      // URL CORRECTA - sin doble slash
+      const backendUrl = import.meta.env.VITE_BACKEND_URL;
+      const url = `${backendUrl}/api/profile`.replace(/([^:]\/)\/+/g, "$1");
+      
+      console.log("🌐 Fetching profile from:", url);
+      console.log("📋 Headers:", {
+        Authorization: `Bearer ${token}`,
+        "Content-Type": "application/json",
+      });
+
+      const response = await fetch(url, {
         method: "GET",
         headers: {
           Authorization: `Bearer ${token}`,
@@ -27,39 +67,61 @@ const Profile = () => {
         },
       });
 
+      console.log("📊 Profile response status:", response.status);
+      console.log("📊 Profile response headers:", Object.fromEntries([...response.headers]));
+
       if (response.ok) {
         const profile = await response.json();
+        console.log("✅ User profile data:", profile);
         setUserProfile(profile);
         setBio(profile.bio || "");
       } else {
-        console.error("Error fetching profile:", response.statusText);
+        console.error("❌ Error fetching profile:", response.status);
+        const errorText = await response.text();
+        console.error("❌ Error response:", errorText);
+        
+        if (response.status === 401 || response.status === 422) {
+          console.log("🗑️ Removing invalid token and redirecting to login");
+          localStorage.removeItem("token");
+          navigate("/login");
+        }
       }
     } catch (error) {
-      console.error("Error fetching user profile:", error);
+      console.error("❌ Network error fetching user profile:", error);
     }
   };
 
   // Actualizar bio del usuario
   const updateBio = async () => {
     try {
-      const token = sessionStorage.getItem("token");
+      const token = localStorage.getItem("token");
+      console.log("🔑 Token en updateBio:", token);
+      
       if (!token) {
         console.error("No token found");
         return;
       }
 
-      const response = await fetch(`${backendUrl}api/profile/bio`, {
+      const backendUrl = import.meta.env.VITE_BACKEND_URL;
+      const url = `${backendUrl}/api/profile/bio`.replace(/([^:]\/)\/+/g, "$1");
+
+      console.log("🌐 Updating bio at:", url);
+
+      const response = await fetch(url, {
         method: "PUT",
         headers: {
           Authorization: `Bearer ${token}`,
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({ bio }),
+        body: JSON.stringify({ bio: bio }),
       });
 
+      console.log("📊 Bio update response status:", response.status);
+
       if (response.ok) {
+        console.log("✅ Bio updated successfully");
         setIsEditingBio(false);
-        setUserProfile((prev) => ({ ...prev, bio }));
+        setUserProfile((prev) => ({ ...prev, bio: bio }));
       } else {
         console.error("Error updating bio:", response.statusText);
       }
@@ -71,13 +133,21 @@ const Profile = () => {
   // Obtener notas del usuario
   const fetchUserNotes = async () => {
     try {
-      const token = sessionStorage.getItem("token");
+      const token = localStorage.getItem("token");
+      console.log("🔑 Token en fetchUserNotes:", token);
+      
       if (!token) {
-        console.error("No token found");
+        console.error("❌ No token found in fetchUserNotes");
         return;
       }
 
-      const response = await fetch(`${backendUrl}api/profile/notes`, {
+      // URL CORRECTA para las notas del usuario
+      const backendUrl = import.meta.env.VITE_BACKEND_URL;
+      const url = `${backendUrl}/api/profile/notes`.replace(/([^:]\/)\/+/g, "$1");
+      
+      console.log("🌐 Fetching user notes from:", url);
+
+      const response = await fetch(url, {
         method: "GET",
         headers: {
           Authorization: `Bearer ${token}`,
@@ -85,24 +155,47 @@ const Profile = () => {
         },
       });
 
+      console.log("📊 Notes response status:", response.status);
+
       if (response.ok) {
         const notes = await response.json();
+        console.log("✅ User notes data:", notes);
         setUserNotes(notes);
       } else {
-        console.error("Error fetching user notes:", response.statusText);
+        console.error("❌ Error fetching notes:", response.status);
+        const errorText = await response.text();
+        console.error("❌ Error response:", errorText);
       }
     } catch (error) {
-      console.error("Error fetching user notes:", error);
+      console.error("❌ Network error fetching user notes:", error);
     } finally {
+      console.log("🏁 Loading complete");
       setLoading(false);
     }
   };
 
-  useEffect(() => {
-    fetchUserProfile();
-    fetchUserNotes();
-  }, []);
+  // Debug: Estado actual del componente
+  console.log("📊 Component state:", {
+    loading,
+    userProfile,
+    userNotes: userNotes.length,
+    bio,
+    isEditingBio
+  });
 
+  if (loading && !userProfile) {
+    console.log("🌀 Showing loading spinner");
+    return (
+      <div className="d-flex justify-content-center align-items-center" style={{ height: "50vh" }}>
+        <div className="spinner-border text-primary" role="status">
+          <span className="visually-hidden">Cargando...</span>
+        </div>
+        <div className="ms-3">Cargando perfil...</div>
+      </div>
+    );
+  }
+
+  console.log("🎨 Rendering profile UI");
   return (
     <>
       <link
@@ -164,12 +257,15 @@ const Profile = () => {
                       </div>
                       <div className="mt-3">
                         <h4 className="mb-1">
-                          {userProfile ? userProfile.username : "Cargando..."}
+                          {userProfile ? userProfile.username : "Usuario no encontrado"}
                         </h4>
                         <p className="text-muted">
                           {userProfile
                             ? `${userProfile.first_name} ${userProfile.last_name}`
-                            : "Perfil"}
+                            : "Perfil no disponible"}
+                        </p>
+                        <p className="text-muted small">
+                          ID: {userProfile?.id || "N/A"}
                         </p>
                       </div>
                     </div>
@@ -233,7 +329,7 @@ const Profile = () => {
                     </div>
                   ) : userNotes.length === 0 ? (
                     <div className="col-12 text-center">
-                      <p>Aquí van tus notas!</p>
+                      <p>No tienes notas todavía. ¡Crea tu primera nota!</p>
                     </div>
                   ) : (
                     userNotes.map((note) => (

@@ -7,7 +7,7 @@ export const initialStore = () => {
             { id: 2, title: "Do my homework", background: null }
         ],
         // ojo, Nuevo para el perfil
-        token: sessionStorage.getItem("token") || null,
+        token: localStorage.getItem("token") || null,
         user: null
     };
 };

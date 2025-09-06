@@ -41,7 +41,7 @@ const RegisterForm = () => {
         actions.signup(user)
             .then(async (signupSuccess) => {
                 if (signupSuccess) {
-                    const token = sessionStorage.getItem("token");
+                    const token = localStorage.getItem("token");
                     await actions.getUser (token);  // Actualiza el store con el usuario
                     alert("¡Usuario creado e sesión iniciada exitosamente!");
                     navigate("/profile");

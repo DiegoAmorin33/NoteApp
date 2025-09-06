@@ -6,11 +6,11 @@ const StoreContext = createContext();
 
 export function StoreProvider({ children }) {
     const [store, dispatch] = useReducer(storeReducer, initialStore());
-    
-    
+
+
     const appActions = actions(dispatch);
 
-    
+
     return (
         <StoreContext.Provider value={{ store, actions: appActions }}>
             {children}

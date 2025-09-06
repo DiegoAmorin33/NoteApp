@@ -26,7 +26,7 @@ const LoginForm = () => {
             .then(async (loggedIn) => {
                 if (loggedIn) {
                     alert("¡Inicio de sesión exitoso!");
-                    const token = sessionStorage.getItem("token");
+                    const token = localStorage.getItem("token");
                     await actions.getUser (token);  // Actualiza el store con el usuario
                     navigate("/profile");
                 } else {
