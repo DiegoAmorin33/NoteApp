@@ -2,88 +2,44 @@ import React, { useState, useRef, useEffect } from "react";
 import "bootstrap/dist/js/bootstrap.bundle.min.js";
 import { useNavigate } from "react-router-dom";
 
-const backendUrl = import.meta.env.VITE_BACKEND_URL;
-
-const NewNote = () => {
+export const NewNote = () => {
   const [content, setContent] = useState("");
   const textareaRef = useRef(null);
   const [availableTags, setAvailableTags] = useState([]);
   const [title, setTitle] = useState("");
-  const [selectedTags, setSelectedTags] = useState([]);
+  const [selectedTag, setSelectedTag] = useState(null);
   const [showLoginErrorModal, setShowLoginErrorModal] = useState(false);
-  const [newTagName, setNewTagName] = useState("");
-  const [isLoading, setIsLoading] = useState(false);
-
-  const backendUrl = "https://bookish-chainsaw-v6ww997qw5ppf5j-3001.app.github.dev/";
-
-  const mainModalRef = useRef(null);
-  const tagModalRef = useRef(null);
-  const loginModalRef = useRef(null);
+  const [isAnonymous, setIsAnonymous] = useState(true);
   const navigate = useNavigate();
+  const API_URL = import.meta.env.VITE_BACKEND_URL;
 
+  // Hook para obtener los tags de la API al cargar el componente
   useEffect(() => {
+    const fetchTags = async () => {
+      try {
+        const response = await fetch(`${API_URL}/api/tags`);
+        if (response.ok) {
+          const data = await response.json();
+          setAvailableTags(data);
+        } else {
+          console.error("Error al obtener los tags.");
+        }
+      } catch (error) {
+        console.error("Error en la conexión:", error);
+      }
+    };
     fetchTags();
-    if (mainModalRef.current) {
-      new window.bootstrap.Modal(mainModalRef.current);
-    }
-    if (tagModalRef.current) {
-      new window.bootstrap.Modal(tagModalRef.current);
-    }
-    if (loginModalRef.current) {
-      new window.bootstrap.Modal(loginModalRef.current);
-    }
   }, []);
 
-  const fetchTags = async () => {
-    try {
-      const response = await fetch(`${backendUrl}api/tags`);
-      if (response.ok) {
-        const data = await response.json();
-        setAvailableTags(data);
-      } else {
-        console.error("Error al obtener los tags.");
-      }
-    } catch (error) {
-      console.error("Error en la conexión:", error);
-    }
-  };
-
+  // Hook para ajustar el tamaño del textarea cuando cambia el contenido
   useEffect(() => {
     if (textareaRef.current) {
       textareaRef.current.style.height = "auto";
-      textareaRef.current.style.height = textareaRef.current.scrollHeight + "px";
+      textareaRef.current.style.height =
+        textareaRef.current.scrollHeight + "px";
     }
   }, [content]);
 
-  const showMainModal = () => {
-    const modal = new window.bootstrap.Modal(mainModalRef.current);
-    modal.show();
-  };
-
-  const hideMainModal = () => {
-    const modal = window.bootstrap.Modal.getInstance(mainModalRef.current);
-    if (modal) modal.hide();
-  };
-
-  const showTagModal = () => {
-    const modal = new window.bootstrap.Modal(tagModalRef.current);
-    modal.show();
-  };
-
-  const hideTagModal = () => {
-    const modal = window.bootstrap.Modal.getInstance(tagModalRef.current);
-    if (modal) modal.hide();
-  };
-
-  const showLoginModal = () => {
-    const modal = new window.bootstrap.Modal(loginModalRef.current);
-    modal.show();
-  };
-
-  const hideLoginModal = () => {
-    const modal = window.bootstrap.Modal.getInstance(loginModalRef.current);
-    if (modal) modal.hide();
-  };
 
   const handleContentChange = (e) => {
     setContent(e.target.value);
@@ -94,100 +50,45 @@ const NewNote = () => {
   };
 
   const handleTagClick = (tagName) => {
-    setSelectedTags(prev => {
-      if (prev.includes(tagName)) {
-        return prev.filter(tag => tag !== tagName);
-      } else {
-        return [...prev, tagName];
-      }
-    });
-  };
-
-  const removeTag = (tagNameToRemove) => {
-    setSelectedTags(prev => prev.filter(tag => tag !== tagNameToRemove));
+    setSelectedTag(tagName === selectedTag ? null : tagName);
   };
 
   const handleClose = () => {
     setContent("");
     setTitle("");
-    setSelectedTags([]);
-    setNewTagName("");
-    hideMainModal();
-  };
+    setSelectedTag(null);
+    setShowLoginErrorModal(false);
+  }; 
 
-  const createNewTag = async () => {
-    if (!newTagName.trim()) {
-      alert("El nombre del tag no puede estar vacío");
-      return;
-    }
-
-    const token = sessionStorage.getItem("token") || localStorage.getItem("token");
-    if (!token) {
-      hideTagModal();
-      showLoginModal();
-      return;
-    }
-
-    setIsLoading(true);
-    try {
-      const response = await fetch(`${backendUrl}api/tags`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "Authorization": `Bearer ${token}`
-        },
-        body: JSON.stringify({ name: newTagName.trim() }),
-      });
-
-      if (response.ok) {
-        const newTag = await response.json();
-        setAvailableTags(prev => [...prev, newTag]);
-        setSelectedTags(prev => [...prev, newTag.name]);
-        setNewTagName("");
-        hideTagModal();
-      } else {
-        const errorData = await response.json();
-        alert(`Error creando tag: ${errorData.msg || errorData.error}`);
-      }
-    } catch (error) {
-      console.error("Error creando tag:", error);
-      alert("Error al crear el tag");
-    } finally {
-      setIsLoading(false);
-    }
-  };
 
   const publishNote = async () => {
-    const token = sessionStorage.getItem("token") || localStorage.getItem("token");
+    // la recomendacion es que se use global reducer, pero lo vi muy complicado y lo deje asi
+    const token = localStorage.getItem("token");
+
+    // Verificamos que exista una sesion iniciada
     if (!token) {
-      showLoginModal();
+      setShowLoginErrorModal(true);
       return;
     }
 
-    if (selectedTags.length === 0) {
+    if (!selectedTag) {
       alert("Debes seleccionar al menos un tag para publicar la nota.");
       return;
     }
 
-    if (!title.trim() || !content.trim()) {
-      alert("El título y contenido son obligatorios");
-      return;
-    }
-
     const noteData = {
-      title: title.trim(),
-      content: content.trim(),
-      is_anonymous: false,
-      tags: selectedTags,
+      title: title,
+      content: content,
+      tags: [selectedTag],
+      is_anonymous: isAnonymous,
     };
 
-    setIsLoading(true);
     try {
-      const response = await fetch(`${backendUrl}api/notes`, {
+      const response = await fetch(`${API_URL}/api/notes`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
+          "Authorization": `Bearer ${token}`
         },
         body: JSON.stringify(noteData),
       });
@@ -197,143 +98,156 @@ const NewNote = () => {
         const modalElement = document.getElementById("exampleModal");
         if (modalElement) {
           const modal = window.bootstrap.Modal.getInstance(modalElement);
-          if (modal) modal.hide();
+          if (modal) {
+            modal.hide();
+          }
         }
-        handleClose();
-        navigate("/");
+        handleClose(); // Reseteamos los inputs
+        navigate("/"); // Redirigimos al usuario a la página de inicio
       } else {
         const errorData = await response.json();
-        alert(`Error al publicar: ${errorData.msg || errorData.error}`);
+        alert(`Error al publicar la nota: ${errorData.msg}`);
       }
     } catch (error) {
-      console.error("Error publicando nota:", error);
-      alert("Error de conexión");
-    } finally {
-      setIsLoading(false);
+      console.error("Error en la conexión:", error);
+      alert("Ocurrió un error inesperado.");
     }
   };
 
   return (
-    <div className="">
-      {/* 🔽 Aquí sigue todo tu JSX original (botón de New Note, modales, etc.) */}
-      <button className="btn btn-outline-dark" onClick={showMainModal}>
-        New Note
+    <div className="container">
+      <button
+        type="button"
+        className="btn btn-primary"
+        data-bs-toggle="modal"
+        data-bs-target="#exampleModal"
+      >
+        NEW NOTE!
       </button>
 
-      {/* Modal principal */}
-      <div className="modal fade" ref={mainModalRef} tabIndex="-1" aria-hidden="true">
-        <div className="modal-dialog modal-lg">
+      {/* Modal para crear una nota */}
+      <div
+        className="modal"
+        id="exampleModal"
+        tabIndex="-1"
+        aria-labelledby="exampleModalLabel"
+        aria-hidden="true"
+      >
+        <div className="modal-dialog">
           <div className="modal-content">
             <div className="modal-header">
-              <h5 className="modal-title">Nueva Nota</h5>
-              <button type="button" className="btn-close" onClick={handleClose}></button>
+              <h1 className="modal-title fs-5" id="exampleModalLabel">
+                ¿Qué deseas publicar?
+              </h1>
+              <button
+                type="button"
+                className="btn-close"
+                data-bs-dismiss="modal"
+                aria-label="Close"
+              ></button>
             </div>
+
+            {/* Definimos si es anonima o no, aun no esta listo, no logro poder mostrar los datos del usuario que publica */}
+            <div className="me-3 mt-2 btn-sm d-flex justify-content-end">
+              <input
+                type="radio"
+                className="btn-check"
+                name="btnradio"
+                id="btnradio1"
+                autoComplete="off"
+                checked={isAnonymous} // Verificamos el estado
+                onChange={() => setIsAnonymous(true)} // Cambia el estado a anónimo
+              />
+              <label className="btn btn-outline-secondary" htmlFor="btnradio1">Anónimo</label>
+
+              <input
+                type="radio"
+                className="btn-check"
+                name="btnradio"
+                id="btnradio2"
+                autoComplete="off"
+                checked={!isAnonymous} // Verificamos lo opuesto
+                onChange={() => setIsAnonymous(false)} // Cambia el estado a público
+              />
+              <label className="btn btn-outline-secondary" htmlFor="btnradio2">Público</label>
+            </div>
+
             <div className="modal-body">
               <input
                 type="text"
-                className="form-control mb-2"
-                placeholder="Título"
+                placeholder="Escribe el título de tu nota"
+                className="form-control form-control-lg mb-1"
                 value={title}
                 onChange={handleTitleChange}
               />
               <textarea
                 ref={textareaRef}
-                className="form-control mb-2"
-                rows="3"
-                placeholder="Escribe tu nota aquí..."
+                className="form-control form-control-lg"
+                rows="1"
+                placeholder="¿Qué quieres compartir?"
                 value={content}
                 onChange={handleContentChange}
-              ></textarea>
-              <div className="mb-2">
-                <strong>Tags:</strong>
-                <div className="d-flex flex-wrap mt-2">
-                  {availableTags.map(tag => (
+                style={{ resize: "none", overflow: "hidden" }}
+              />
+
+              <p className="mt-3 text-center">AGREGA UN TAG</p>
+
+              <div className="btn-group" role="group" aria-label="Basic checkbox toggle button group">
+                <div>
+                  {availableTags.map((tag) => (//iteramos sobre los tags disponibles
                     <button
-                      key={tag.id}
-                      className={`btn btn-sm m-1 ${selectedTags.includes(tag.name) ? "btn-primary" : "btn-outline-primary"}`}
+                      key={tag.tag_id}
+                      type="button"
+                      className={`btn m-1 ${selectedTag === tag.name ? 'btn-primary' : 'btn-outline-primary'}`}
                       onClick={() => handleTagClick(tag.name)}
                     >
                       {tag.name}
                     </button>
                   ))}
-                  {selectedTags.map(tag => (
-                    !availableTags.some(t => t.name === tag) && (
-                      <span key={tag} className="badge bg-secondary m-1">
-                        {tag}
-                        <button
-                          type="button"
-                          className="btn-close btn-close-white ms-2"
-                          onClick={() => removeTag(tag)}
-                          style={{ fontSize: "0.6rem" }}
-                        ></button>
-                      </span>
-                    )
-                  ))}
-                  <button className="btn btn-sm btn-success m-1" onClick={showTagModal}>
-                    + Nuevo Tag
-                  </button>
                 </div>
               </div>
             </div>
             <div className="modal-footer">
-              <button className="btn btn-secondary" onClick={handleClose}>
-                Cerrar
-              </button>
-              <button className="btn btn-primary" onClick={publishNote} disabled={isLoading}>
-                {isLoading ? "Publicando..." : "Publicar"}
-              </button>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Modal para crear nuevo Tag */}
-      <div className="modal fade" ref={tagModalRef} tabIndex="-1" aria-hidden="true">
-        <div className="modal-dialog">
-          <div className="modal-content">
-            <div className="modal-header">
-              <h5 className="modal-title">Crear nuevo Tag</h5>
-              <button type="button" className="btn-close" onClick={hideTagModal}></button>
-            </div>
-            <div className="modal-body">
-              <input
-                type="text"
-                className="form-control"
-                placeholder="Nombre del Tag"
-                value={newTagName}
-                onChange={(e) => setNewTagName(e.target.value)}
-              />
-            </div>
-            <div className="modal-footer">
-              <button className="btn btn-secondary" onClick={hideTagModal}>
+              <button
+                type="button"
+                className="btn btn-secondary"
+                data-bs-dismiss="modal"
+                onClick={handleClose}
+              >
                 Cancelar
               </button>
-              <button className="btn btn-success" onClick={createNewTag} disabled={isLoading}>
-                {isLoading ? "Creando..." : "Crear Tag"}
+              <button
+                type="button"
+                className="btn btn-primary"
+                onClick={publishNote}
+              >
+                Publicar
               </button>
             </div>
           </div>
         </div>
       </div>
 
-      <div className="modal fade" ref={loginModalRef} tabIndex="-1" aria-hidden="true">
-        <div className="modal-dialog">
-          <div className="modal-content">
-            <div className="modal-header">
-              <h5 className="modal-title">Error</h5>
-              <button type="button" className="btn-close" onClick={hideLoginModal}></button>
-            </div>
-            <div className="modal-body">
-              Debes iniciar sesión para realizar esta acción.
-            </div>
-            <div className="modal-footer">
-              <button className="btn btn-primary" onClick={hideLoginModal}>
-                Entendido
-              </button>
+      {/*Modal de error para el inicio de sesión */}
+      {showLoginErrorModal && (
+        <div className="modal fade show" style={{ display: 'block' }} tabIndex="-1">
+          <div className="modal-dialog">
+            <div className="modal-content">
+              <div className="modal-header">
+                <h5 className="modal-title">Error de Autenticación</h5>
+                <button type="button" className="btn-close" onClick={() => setShowLoginErrorModal(false)}></button>
+              </div>
+              <div className="modal-body">
+                <p>Debes iniciar sesión para poder publicar notas.</p>
+              </div>
+              <div className="modal-footer">
+                <button type="button" className="btn btn-secondary" onClick={() => setShowLoginErrorModal(false)}>Cerrar</button>
+
+              </div>
             </div>
           </div>
         </div>
-      </div>
+      )}
     </div>
   );
 };
