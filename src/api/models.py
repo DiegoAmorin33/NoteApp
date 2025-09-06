@@ -27,8 +27,8 @@ class User(db.Model):
     last_login_at: Mapped[datetime] = mapped_column(DateTime, nullable=True)
     created_at: Mapped[datetime] = mapped_column(
         DateTime, nullable=False, server_default=func.now())
-    notes = db.relationship("Notes")
-    comments = db.relationship("Comments")
+    notes = db.relationship("Notes", backref="user")
+    comments = db.relationship("Comments", backref="user")
     reports = db.relationship("Reports", backref="reporter")
     notifications = db.relationship("Notifications", backref="recipient")
     favorite_notes = db.relationship("UserNoteFavorites", backref="user")
@@ -38,13 +38,12 @@ class User(db.Model):
         return {
             "id": self.id,
             "email": self.email,
-            "first_name":self.first_name,
-            "last_name":self.last_name,
-            "username":self.username,
+            "first_name": self.first_name,
+            "last_name": self.last_name,
+            "username": self.username,
             "bio": self.bio,
             # do not serialize the password, its a security breach
         }
-
 
  # --- TABLA INTERMEDIA PARA NOTES Y TAGS (Muchos a Muchos) ---
 # Esta no es una clase, sino una tabla de asociación.
@@ -66,7 +65,6 @@ class Notes(db.Model):
         DateTime, default=datetime.datetime.utcnow)
     updated_at: Mapped[datetime] = mapped_column(
         DateTime, default=datetime.datetime.utcnow)
-    comments = db.relationship("Comments")
     tags = db.relationship("Tags", secondary=note_tags, backref="notes")
     reports = db.relationship(
         "Reports", backref="note", cascade="all, delete-orphan")
@@ -76,23 +74,38 @@ class Notes(db.Model):
         "UserNoteFavorites", backref="note", cascade="all, delete-orphan")
     votes = db.relationship("Votes", backref="note",
                             cascade="all, delete-orphan")
+    comments = db.relationship(  # para manejar la eliminacion en cascada y que no de error la elimiancion de notas
+        "Comments",
+        backref="note",
+        cascade="all, delete-orphan"
+    )
 
     def serialize(self):
+        # Esta es la parte que valida si la nota es anónima o no
+        user_info = None
+        if not self.is_anonymous:
+            # Si no es anónima, incluimos los datos del usuario
+            user_info = {
+                "id": self.user.id,
+                "username": self.user.username,
+                "first_name": self.user.first_name,
+                "last_name": self.user.last_name,
+            }
+
         return {
             "note_id": self.note_id,
             "user_id": self.user_id,
             "title": self.title,
             "content": self.content,
             "is_anonymous": self.is_anonymous,
-            "created_at": self.created_at,
-            "updated_at": self.updated_at,
-            "comments": self.comments,
-            "tags": self.tags,
-            "reposts": self.reports,
-            "notifications": self.notifications,
-            "favorited_by": self.favorited_by,
-            "votes": self.votes
-            # do not serialize the password, its a security breach
+            "created_at": self.created_at.isoformat() if self.created_at else None,
+            "updated_at": self.updated_at.isoformat() if self.updated_at else None,
+            "tags": [tag.serialize() for tag in self.tags],
+            "comments": [comment.serialize() for comment in self.comments],
+            "reports": [report.serialize() for report in self.reports],
+            "favorited_by": [fav.serialize() for fav in self.favorited_by],
+            "votes": [vote.serialize() for vote in self.votes],
+            "user": user_info
         }
 
 
@@ -113,17 +126,16 @@ class Comments (db.Model):
     votes = db.relationship("Votes", backref="comment",
                             cascade="all, delete-orphan")
 
-# para facilitar el acceso desde el front
     def serialize(self):
         return {
             "comment_id": self.comment_id,
             "note_id": self.note_id,
             "user_id": self.user_id,
             "content": self.content,
-            "created_at": self.created_at,
-            "username": self.user.username,
-            "first_name": self.user.first_name,
-            "last_name": self.user.last_name
+            "created_at": self.created_at.isoformat() if self.created_at else None,
+            "username": self.user.username if self.user else "Usuario eliminado",
+            "first_name": self.user.first_name if self.user else "",
+            "last_name": self.user.last_name if self.user else ""
         }
 
 
@@ -135,9 +147,9 @@ class Tags(db.Model):
     def serialize(self):
         return {
             "tag_id": self.tag_id,
-            "name": self.name,
-            "color_hex": self.color_hex,
+            "name": self.name
         }
+
 
 class Reports(db.Model):
     report_id: Mapped[int] = mapped_column(primary_key=True)
