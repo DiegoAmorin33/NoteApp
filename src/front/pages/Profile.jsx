@@ -38,7 +38,7 @@ const Profile = () => {
     fetchUserNotes();
   }, [navigate]);
 
-  // Función para obtener la información del perfil del usuario
+  // Obtener perfil del usuario
   const fetchUserProfile = async () => {
     try {
       const token = localStorage.getItem("token");
@@ -91,7 +91,7 @@ const Profile = () => {
     }
   };
 
-  // Función para actualizar la bio del usuario
+  // Actualizar bio del usuario
   const updateBio = async () => {
     try {
       const token = localStorage.getItem("token");
@@ -130,7 +130,7 @@ const Profile = () => {
     }
   };
 
-  // Función para obtener las notas del usuario
+  // Obtener notas del usuario
   const fetchUserNotes = async () => {
     try {
       const token = localStorage.getItem("token");
@@ -238,7 +238,7 @@ const Profile = () => {
                           <i className="fa fa-camera fa-2x text-muted mb-2"></i>
                           <p className="text-muted small mb-0">Postear</p>
                           <p className="text-muted small">
-                            Foto de Perfil(avatar predeterminado?)
+                            Foto de Perfil (avatar predeterminado?)
                           </p>
                         </div>
                         <input
@@ -273,10 +273,7 @@ const Profile = () => {
                   <div className="col-md-9">
                     <div className="profile-description">
                       <div className="d-flex justify-content-between align-items-center mb-2">
-                        <label
-                          htmlFor="profileDescription"
-                          className="form-label mb-0"
-                        >
+                        <label htmlFor="profileDescription" className="form-label mb-0">
                           <strong>Sobre mi</strong>
                         </label>
                         {!isEditingBio ? (
@@ -288,10 +285,7 @@ const Profile = () => {
                           </button>
                         ) : (
                           <div>
-                            <button
-                              className="btn btn-sm btn-success me-2"
-                              onClick={updateBio}
-                            >
+                            <button className="btn btn-sm btn-success me-2" onClick={updateBio}>
                               Guardar
                             </button>
                             <button
@@ -343,10 +337,7 @@ const Profile = () => {
                         key={note.note_id}
                         className="col-lg-4 col-md-6 mb-4 d-flex justify-content-center"
                       >
-                        <Link
-                          to={`/noteDetail/${note.note_id}`}
-                          className="text-decoration-none"
-                        >
+                        <Link to={`/noteDetail/${note.note_id}`} className="text-decoration-none">
                           <div
                             className="card h-100"
                             style={{
@@ -356,31 +347,23 @@ const Profile = () => {
                               transition: "transform 0.2s, box-shadow 0.2s",
                             }}
                             onMouseEnter={(e) => {
-                              e.currentTarget.style.transform =
-                                "translateY(-5px)";
-                              e.currentTarget.style.boxShadow =
-                                "0 4px 15px rgba(0,0,0,0.2)";
+                              e.currentTarget.style.transform = "translateY(-5px)";
+                              e.currentTarget.style.boxShadow = "0 4px 15px rgba(0,0,0,0.2)";
                             }}
                             onMouseLeave={(e) => {
                               e.currentTarget.style.transform = "translateY(0)";
-                              e.currentTarget.style.boxShadow =
-                                "0 1px 3px rgba(0,0,0,0.12)";
+                              e.currentTarget.style.boxShadow = "0 1px 3px rgba(0,0,0,0.12)";
                             }}
                           >
                             <div className="card-body d-flex flex-column">
-                              <h5 className="card-title text-dark">
-                                {note.title}
-                              </h5>
-
+                              <h5 className="card-title text-dark">{note.title}</h5>
                               <p className="card-text flex-grow-1 text-muted">
                                 {note.content.length > 100
                                   ? `${note.content.substring(0, 100)}...`
                                   : note.content}
                               </p>
                               <div className="mt-auto">
-                                <span className="btn btn-primary btn-sm">
-                                  Ver más
-                                </span>
+                                <span className="btn btn-primary btn-sm">Ver más</span>
                               </div>
                             </div>
                           </div>

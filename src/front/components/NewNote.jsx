@@ -2,7 +2,9 @@ import React, { useState, useRef, useEffect } from "react";
 import "bootstrap/dist/js/bootstrap.bundle.min.js";
 import { useNavigate } from "react-router-dom";
 
-export const NewNote = () => {
+const backendUrl = import.meta.env.VITE_BACKEND_URL;
+
+const NewNote = () => {
   const [content, setContent] = useState("");
   const textareaRef = useRef(null);
   const [availableTags, setAvailableTags] = useState([]);
@@ -12,7 +14,7 @@ export const NewNote = () => {
   const [newTagName, setNewTagName] = useState("");
   const [isLoading, setIsLoading] = useState(false);
 
-  const backendUrl = "https://glorious-cod-5g5ggj5wjj7whv5qp-3001.app.github.dev/";
+  const backendUrl = "https://bookish-chainsaw-v6ww997qw5ppf5j-3001.app.github.dev/";
 
   const mainModalRef = useRef(null);
   const tagModalRef = useRef(null);
@@ -185,7 +187,7 @@ export const NewNote = () => {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          "Authorization": `Bearer ${token}`
+          Authorization: `Bearer ${token}`,
         },
         body: JSON.stringify(noteData),
       });
@@ -195,12 +197,10 @@ export const NewNote = () => {
         const modalElement = document.getElementById("exampleModal");
         if (modalElement) {
           const modal = window.bootstrap.Modal.getInstance(modalElement);
-          if (modal) {
-            modal.hide();
-          }
+          if (modal) modal.hide();
         }
-        handleClose(); // Reseteamos los inputs
-        navigate("/"); // Redirigimos al usuario a la página de inicio
+        handleClose();
+        navigate("/");
       } else {
         const errorData = await response.json();
         alert(`Error al publicar: ${errorData.msg || errorData.error}`);

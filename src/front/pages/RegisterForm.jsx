@@ -9,7 +9,7 @@ const RegisterForm = () => {
     const { actions } = useGlobalReducer();
     const navigate = useNavigate();
 
-    const [user, setUser] = useState({
+    const [user, setUser ] = useState({
         first_name: "",
         last_name: "",
         username: "",
@@ -22,7 +22,7 @@ const RegisterForm = () => {
     const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
     const handleChange = (event) => {
-        setUser({ ...user, [event.target.name]: event.target.value });
+        setUser ({ ...user, [event.target.name]: event.target.value });
     };
 
     const handleUserSubmit = (event) => {
@@ -38,11 +38,11 @@ const RegisterForm = () => {
             return;
         }
 
-        
         actions.signup(user)
-            .then(signupSuccess => {
+            .then(async (signupSuccess) => {
                 if (signupSuccess) {
-                    actions.getUser(sessionStorage.getItem("token"));
+                    const token = localStorage.getItem("token");
+                    await actions.getUser (token);  // Actualiza el store con el usuario
                     alert("¡Usuario creado e sesión iniciada exitosamente!");
                     navigate("/profile");
                 }
@@ -64,7 +64,6 @@ const RegisterForm = () => {
                         <h5 className="mb-3 fw-normal text-center">Formulario de Registro</h5>
                         {error && <div className="alert alert-danger">{error}</div>}
                         
-                      
                         <div className="form-floating mb-3">
                             <input onChange={handleChange} name="first_name" type="text" className="form-control" id="floatingFirstName" placeholder="Nombre" required />
                             <label htmlFor="floatingFirstName">Nombre</label>
@@ -82,7 +81,6 @@ const RegisterForm = () => {
                             <label htmlFor="floatingEmail">Correo electrónico</label>
                         </div>
 
-                        
                         <div className="form-floating mb-3 position-relative">
                             <input onChange={handleChange} name="password" type={showPassword ? "text" : "password"} className="form-control" id="floatingPassword" placeholder="Contraseña" required />
                             <label htmlFor="floatingPassword">Contraseña</label>
@@ -91,7 +89,6 @@ const RegisterForm = () => {
                             </span>
                         </div>
 
-                        
                         <div className="form-floating mb-3 position-relative">
                             <input onChange={(e) => setConfirmPassword(e.target.value)} name="confirmPassword" type={showConfirmPassword ? "text" : "password"} className="form-control" id="floatingConfirmPassword" placeholder="Confirmar Contraseña" required />
                             <label htmlFor="floatingConfirmPassword">Confirmar Contraseña</label>

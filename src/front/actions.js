@@ -288,3 +288,4 @@ export const actions = (dispatch) => ({
         return actions(dispatch).getUser(token);
     }
 });
+
