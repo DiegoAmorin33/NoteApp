@@ -42,6 +42,20 @@ def get_notes():
 
     return jsonify(serialized_notes), 200
 
+
+@api.route('/notes/search', methods=['GET'])
+def search_notes_by_tag():
+    tag_query = request.args.get('tag', '').strip()
+    
+    # Buscar notas que contengan el tag especificado
+    notes_with_tag = Notes.query.join(Notes.tags).filter(
+        Tags.name.ilike(f'%{tag_query}%')
+    ).distinct().all()
+    
+    serialized_notes = [note.serialize() for note in notes_with_tag]
+    return jsonify(serialized_notes), 200
+
+
 # PAULO Endpoint para obtener todos los comentarios de una nota
 @api.route('/notes/<int:note_id>/comments', methods=['GET'])
 def get_comments(note_id):

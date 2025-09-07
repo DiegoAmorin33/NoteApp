@@ -7,7 +7,7 @@ export const Home = () => {
   const [error, setError] = useState(null);
 
   {/* Si hay errores de Fetch, cambien el BackendUrl al de su puerto y deberia solucionarse */}
-  const backendUrl = "https://probable-trout-r4wwrjwvrpxxc5g7q-3001.app.github.dev/";
+  const backendUrl = "https://urban-capybara-pj9px5q65gx72r5jw-3001.app.github.dev/";
 
   useEffect(() => {
     fetchNotes();
@@ -120,7 +120,11 @@ export const Home = () => {
           </p>
         </div>
       </div>
-
+    {/* Se busca para mostrar en la página principal por los tags */}
+    <form className="form-inline my-2 my-lg-0">
+      <input className="form-control mr-sm-2" type="search" placeholder="Buscar tags" aria-label="Search" />
+      <button className="btn btn-outline-success my-2 my-sm-0" type="submit">Buscar</button>
+    </form>
       {notes.length === 0 ? (
         <div className="text-center py-5">
           <div className="mb-4">
