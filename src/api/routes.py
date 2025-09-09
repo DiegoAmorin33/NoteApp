@@ -1,4 +1,4 @@
-from flask import Flask, request, jsonify, url_for, Blueprint, redirect, flash
+from flask import Flask, request, jsonify, url_for, Blueprint, redirect, flash, send_from_directory
 from api.models import db, User, Notes, Tags, Comments, Votes
 from api.utils import generate_sitemap, APIException
 from flask_cors import CORS
@@ -47,19 +47,35 @@ def upload_profile_picture():
         filename = secure_filename(filename)
 
         # Ensure upload directory exists
-        upload_folder = 'src/front/assets/img/ProfilePictures'
+        # Use absolute path to avoid issues with relative paths
+        base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+        upload_folder = os.path.join(base_dir, 'src', 'front', 'assets', 'img', 'ProfilePictures')
+        
+        print(f"📁 Base directory: {base_dir}")
+        print(f"📁 Upload folder: {upload_folder}")
+        
         if not os.path.exists(upload_folder):
-            os.makedirs(upload_folder)
+            print(f"📁 Creating upload directory: {upload_folder}")
+            os.makedirs(upload_folder, exist_ok=True)
 
         # Save the file
         file_path = os.path.join(upload_folder, filename)
+        print(f"💾 Saving file to: {file_path}")
         file.save(file_path)
+        
+        # Verify file was saved
+        if os.path.exists(file_path):
+            print(f"✅ File saved successfully: {file_path}")
+            print(f"📏 File size: {os.path.getsize(file_path)} bytes")
+        else:
+            print(f"❌ File was not saved: {file_path}")
 
         # Update user's profile_image_url in database
         user = User.query.get(current_user_id)
         if user:
             user.profile_image_url = filename
             db.session.commit()
+            print(f"✅ Database updated with filename: {filename}")
 
         return jsonify({
             "message": "File uploaded successfully",
@@ -73,10 +89,29 @@ def upload_profile_picture():
 @api.route('/profile/picture/<filename>', methods=['GET'])
 def get_profile_picture(filename):
     try:
-        upload_folder = 'src/front/assets/img/ProfilePictures'
+        # Use the same absolute path as in upload
+        base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+        upload_folder = os.path.join(base_dir, 'src', 'front', 'assets', 'img', 'ProfilePictures')
+        
+        # Debug: Check if file exists
+        file_path = os.path.join(upload_folder, filename)
+        print(f"🔍 Looking for file: {file_path}")
+        print(f"🔍 File exists: {os.path.exists(file_path)}")
+        print(f"📁 Upload folder: {upload_folder}")
+        
+        if not os.path.exists(file_path):
+            print(f"❌ File not found: {file_path}")
+            # List files in directory for debugging
+            if os.path.exists(upload_folder):
+                files = os.listdir(upload_folder)
+                print(f"📋 Files in directory: {files}")
+            return jsonify({"error": "File not found"}), 404
+            
+        print(f"✅ Serving file: {file_path}")
         return send_from_directory(upload_folder, filename)
-    except FileNotFoundError:
-        return jsonify({"error": "File not found"}), 404
+    except Exception as e:
+        print(f"❌ Error serving file: {str(e)}")
+        return jsonify({"error": f"Error serving file: {str(e)}"}), 500
 
 
 @api.route('/profile/my-picture', methods=['GET'])

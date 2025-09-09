@@ -14,13 +14,13 @@ const Profile = () => {
     VITE_BACKEND_URL: import.meta.env.VITE_BACKEND_URL,
     VITE_BASENAME: import.meta.env.VITE_BASENAME,
     MODE: import.meta.env.MODE,
-    DEV: import.meta.env.DEV
+    DEV: import.meta.env.DEV,
   });
 
   // Debug: Verificar todo el localStorage
   console.log("🔍 LocalStorage completo:", {
     token: localStorage.getItem("token"),
-    allItems: { ...localStorage }
+    allItems: { ...localStorage },
   });
 
   // Verificar token al cargar el componente
@@ -70,7 +70,10 @@ const Profile = () => {
       });
 
       console.log("📊 Profile response status:", response.status);
-      console.log("📊 Profile response headers:", Object.fromEntries([...response.headers]));
+      console.log(
+        "📊 Profile response headers:",
+        Object.fromEntries([...response.headers])
+      );
 
       if (response.ok) {
         const profile = await response.json();
@@ -102,7 +105,7 @@ const Profile = () => {
     console.log("Selected file:", {
       name: file.name,
       size: file.size,
-      type: file.type
+      type: file.type,
     });
 
     const token = localStorage.getItem("token");
@@ -124,7 +127,7 @@ const Profile = () => {
         finalUrl: url,
         fileSize: file.size,
         fileType: file.type,
-        hasToken: !!token
+        hasToken: !!token,
       });
 
       const response = await fetch(url, {
@@ -135,16 +138,19 @@ const Profile = () => {
         body: formData,
       });
 
-       console.log("Fetch response received:", response);
+      console.log("Fetch response received:", response);
 
       console.log("📊 Response status:", response.status);
-      console.log("📊 Response headers:", Object.fromEntries([...response.headers]));
+      console.log(
+        "📊 Response headers:",
+        Object.fromEntries([...response.headers])
+      );
 
       if (response.ok) {
         const data = await response.json();
         console.log("File uploaded successfully:", data);
         // Close modal and refresh profile
-        const modal = document.getElementById('profile-picture-pfp');
+        const modal = document.getElementById("profile-picture-pfp");
         const bootstrapModal = bootstrap.Modal?.getInstance(modal);
         if (bootstrapModal) {
           bootstrapModal.hide();
@@ -156,13 +162,14 @@ const Profile = () => {
         console.error("Error response:", {
           status: response.status,
           statusText: response.statusText,
-          body: errorText
+          body: errorText,
         });
 
         let errorMessage = "Unknown error";
         try {
           const errorJson = JSON.parse(errorText);
-          errorMessage = errorJson.error || errorJson.message || "Unknown error";
+          errorMessage =
+            errorJson.error || errorJson.message || "Unknown error";
         } catch {
           errorMessage = errorText || `HTTP ${response.status}`;
         }
@@ -173,17 +180,12 @@ const Profile = () => {
       console.error("Network error details:", {
         message: error.message,
         stack: error.stack,
-        name: error.name
+        name: error.name,
       });
       alert(`Network error: ${error.message}. Check console for details.`);
     }
   };
 
-
-
-
-
-  
   // Actualizar bio del usuario
   const updateBio = async () => {
     try {
@@ -223,8 +225,6 @@ const Profile = () => {
     }
   };
 
-
-
   // Obtener notas del usuario
   const fetchUserNotes = async () => {
     try {
@@ -238,7 +238,10 @@ const Profile = () => {
 
       // URL CORRECTA para las notas del usuario
       const backendUrl = import.meta.env.VITE_BACKEND_URL;
-      const url = `${backendUrl}/api/profile/notes`.replace(/([^:]\/)\/+/g, "$1");
+      const url = `${backendUrl}/api/profile/notes`.replace(
+        /([^:]\/)\/+/g,
+        "$1"
+      );
 
       console.log("🌐 Fetching user notes from:", url);
 
@@ -275,13 +278,24 @@ const Profile = () => {
     userProfile,
     userNotes: userNotes.length,
     bio,
-    isEditingBio
+    isEditingBio,
+  });
+
+  // Debug: Profile picture URL
+  console.log("🖼️ Profile picture debug:", {
+    hasUserProfile: !!userProfile,
+    profilePictureUrl: userProfile?.profile_picture_url,
+    backendUrl: import.meta.env.VITE_BACKEND_URL,
+    fullImageUrl: userProfile?.profile_picture_url ? `${import.meta.env.VITE_BACKEND_URL}${userProfile.profile_picture_url}` : null,
   });
 
   if (loading && !userProfile) {
     console.log("🌀 Showing loading spinner");
     return (
-      <div className="d-flex justify-content-center align-items-center" style={{ height: "50vh" }}>
+      <div
+        className="d-flex justify-content-center align-items-center"
+        style={{ height: "50vh" }}
+      >
         <div className="spinner-border text-primary" role="status">
           <span className="visually-hidden">Cargando...</span>
         </div>
@@ -335,29 +349,42 @@ const Profile = () => {
                       >
                         {userProfile?.profile_picture_url ? (
                           <img
-                            src={`${import.meta.env.VITE_BACKEND_URL}${userProfile.profile_picture_url}`}
+                            src={`${import.meta.env.VITE_BACKEND_URL}${
+                              userProfile.profile_picture_url
+                            }`.replace(/([^:]\/)\/+/g, "$1")}
                             alt="Profile"
                             style={{
                               width: "100%",
                               height: "100%",
                               objectFit: "cover",
-                              borderRadius: "6px"
+                              objectPosition: "center",
+                              borderRadius: "6px",
+                              border: "none",
+                              display: "block",
+                            }}
+                            onLoad={() => console.log("✅ Profile image loaded successfully")}
+                            onError={(e) => {
+                              console.error("❌ Profile image failed to load:", {
+                                src: e.target.src,
+                                error: e.type,
+                                userProfile: userProfile
+                              });
                             }}
                           />
                         ) : (
                           <div className="text-center">
                             <i className="fa fa-camera fa-2x text-muted mb-2"></i>
                             <br />
-                            <i className="text-muted mb-2">
-                              Click para editar
-                            </i>
+                            <i className="text-muted mb-2">Click para editar</i>
                           </div>
                         )}
                       </div>
                     </div>
                     <div className="mt-3">
                       <h4 className="mb-1">
-                        {userProfile ? userProfile.username : "Usuario no encontrado"}
+                        {userProfile
+                          ? userProfile.username
+                          : "Usuario no encontrado"}
                       </h4>
                       <p className="text-muted">
                         {userProfile
@@ -378,7 +405,10 @@ const Profile = () => {
                     <div className="modal-dialog">
                       <div className="modal-content">
                         <div className="modal-header">
-                          <h5 className="modal-title" id="profilePictureModalLabel">
+                          <h5
+                            className="modal-title"
+                            id="profilePictureModalLabel"
+                          >
                             Foto de perfil
                           </h5>
                           <button
@@ -393,11 +423,13 @@ const Profile = () => {
                           style={{
                             minHeight: "200px",
                             position: "relative",
-                            cursor: "pointer"
+                            cursor: "pointer",
                           }}
                         >
                           <i className="fa fa-camera fa-2x text-muted mb-2"></i>
-                          <p className="text-muted small mb-0">Sube tu foto de perfil</p>
+                          <p className="text-muted small mb-0">
+                            Sube tu foto de perfil
+                          </p>
                           <input
                             type="file"
                             accept="image/*"
@@ -422,9 +454,12 @@ const Profile = () => {
                             Cancelar
                           </button>
                           <button
-                            type="button"className="btn btn-primary btn-sm"
+                            type="button"
+                            className="btn btn-primary btn-sm"
                             onClick={() => {
-                              const fileInput = document.querySelector('#profile-picture-pfp input[type="file"]');
+                              const fileInput = document.querySelector(
+                                '#profile-picture-pfp input[type="file"]'
+                              );
                               if (fileInput) {
                                 fileInput.click();
                               }
@@ -476,54 +511,138 @@ const Profile = () => {
                 </div>
 
                 {/* Notas del usuario */}
-                <div className="row mt-5 justify-content-center">
+                <div className="row mt-5">
+                  <div className="col-12">
+                    <div className="d-flex justify-content-between align-items-center mb-4">
+                      <h3>Mis Notas</h3>
+                      <span className="badge bg-secondary">
+                        {userNotes.length}{" "}
+                        {userNotes.length === 1 ? "nota" : "notas"}
+                      </span>
+                    </div>
+                  </div>
+
                   {loading ? (
                     <div className="col-12 text-center">
-                      <p>Cargando notas...</p>
+                      <div
+                        className="spinner-border text-primary"
+                        role="status"
+                      >
+                        <span className="visually-hidden">
+                          Cargando notas...
+                        </span>
+                      </div>
+                      <p className="mt-2">Cargando notas...</p>
                     </div>
                   ) : userNotes.length === 0 ? (
-                    <div className="col-12 text-center">
-                      <p>No tienes notas todavía. ¡Crea tu primera nota!</p>
+                    <div className="col-12 text-center py-5">
+                      <div className="mb-4">
+                        <i className="fas fa-sticky-note fa-4x text-muted"></i>
+                      </div>
+                      <h4 className="text-muted">No tienes notas todavía</h4>
+                      <p className="text-muted">
+                        ¡Crea tu primera nota y compártela con la comunidad!
+                      </p>
+                      <Link to="/" className="btn btn-primary">
+                        Crear primera nota
+                      </Link>
                     </div>
                   ) : (
-                    userNotes.map((note) => (
-                      <div
-                        key={note.note_id}
-                        className="col-lg-4 col-md-6 mb-4 d-flex justify-content-center"
-                      >
-                        <Link to={`/noteDetail/${note.note_id}`} className="text-decoration-none">
-                          <div
-                            className="card h-100"
-                            style={{
-                              width: "100%",
-                              maxWidth: "24rem",
-                              cursor: "pointer",
-                              transition: "transform 0.2s, box-shadow 0.2s",
-                            }}
-                            onMouseEnter={(e) => {
-                              e.currentTarget.style.transform = "translateY(-5px)";
-                              e.currentTarget.style.boxShadow = "0 4px 15px rgba(0,0,0,0.2)";
-                            }}
-                            onMouseLeave={(e) => {
-                              e.currentTarget.style.transform = "translateY(0)";
-                              e.currentTarget.style.boxShadow = "0 1px 3px rgba(0,0,0,0.12)";
-                            }}
-                          >
+                    <div className="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-4">
+                      {userNotes.map((note) => (
+                        <div key={note.note_id} className="col">
+                          <div className="card h-100 shadow-sm d-flex flex-column">
                             <div className="card-body d-flex flex-column">
-                              <h5 className="card-title text-dark">{note.title}</h5>
-                              <p className="card-text flex-grow-1 text-muted">
-                                {note.content.length > 100
-                                  ? `${note.content.substring(0, 100)}...`
-                                  : note.content}
+                              <div className="d-flex justify-content-between align-items-start mb-2">
+                                <h5
+                                  className="card-title text-truncate"
+                                  title={note.title}
+                                >
+                                  {note.title || "Sin título"}
+                                </h5>
+                                {note.is_anonymous && (
+                                  <span className="badge bg-info ms-2">
+                                    Anónimo
+                                  </span>
+                                )}
+                              </div>
+
+                              <p className="card-text text-muted">
+                                {note.content && note.content.length > 150
+                                  ? `${note.content.substring(0, 150)}...`
+                                  : note.content || "Sin contenido"}
                               </p>
+
+                              {note.tags && note.tags.length > 0 && (
+                                <div className="mb-3">
+                                  <div className="d-flex flex-wrap gap-1">
+                                    {note.tags.map((tag, index) => (
+                                      <span
+                                        key={index}
+                                        className="badge bg-primary"
+                                        style={{ fontSize: "0.75rem" }}
+                                      >
+                                        {typeof tag === "object"
+                                          ? tag.name
+                                          : tag}
+                                      </span>
+                                    ))}
+                                  </div>
+                                </div>
+                              )}
+
                               <div className="mt-auto">
-                                <span className="btn btn-primary btn-sm">Ver más</span>
+                                <small className="text-muted">
+                                  <i className="fas fa-clock me-1"></i>
+                                  {note.created_at
+                                    ? new Date(
+                                        note.created_at
+                                      ).toLocaleDateString("es-ES", {
+                                        day: "2-digit",
+                                        month: "2-digit",
+                                        hour: "2-digit",
+                                        minute: "2-digit",
+                                      })
+                                    : "Fecha no disponible"}
+                                </small>
+                              </div>
+                            </div>
+
+                            {/* Footer con botones de acción */}
+                            <div className="card-footer bg-transparent border-top-0">
+                              <div className="d-flex justify-content-between align-items-center">
+                                <Link
+                                  to={`/noteDetail/${note.note_id}`}
+                                  className="btn btn-outline-primary btn-sm"
+                                >
+                                  Leer más
+                                </Link>
+
+                                <div className="d-flex gap-2 align-items-center">
+                                  {/* Contador de votos positivos */}
+                                  <small className="text-muted">
+                                    <i className="fas fa-thumbs-up me-1 text-success"></i>
+                                    {note.positive_votes || 0}
+                                  </small>
+
+                                  {/* Contador de votos negativos */}
+                                  <small className="text-muted">
+                                    <i className="fas fa-thumbs-down me-1 text-danger"></i>
+                                    {note.negative_votes || 0}
+                                  </small>
+
+                                  {/* Contador de comentarios */}
+                                  <small className="text-muted">
+                                    <i className="fas fa-comment me-1"></i>
+                                    {note.comments_count || 0}
+                                  </small>
+                                </div>
                               </div>
                             </div>
                           </div>
-                        </Link>
-                      </div>
-                    ))
+                        </div>
+                      ))}
+                    </div>
                   )}
                 </div>
               </div>
