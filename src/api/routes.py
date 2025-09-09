@@ -1,4 +1,4 @@
-from flask import Flask, request, jsonify, url_for, Blueprint
+from flask import Flask, request, jsonify, url_for, Blueprint, redirect, flash
 from api.models import db, User, Notes, Tags, Comments, Votes
 from api.utils import generate_sitemap, APIException
 from flask_cors import CORS
@@ -6,11 +6,100 @@ from flask_bcrypt import Bcrypt
 from flask_jwt_extended import create_access_token
 from flask_jwt_extended import jwt_required, get_jwt_identity
 import datetime
+import os
+from werkzeug.utils import secure_filename
+
 
 api = Blueprint('api', __name__)
 bcrypt = Bcrypt()
 
-CORS(api)
+
+
+ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg'}
+
+def allowed_file(filename):
+    return '.' in filename and \
+           filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
+
+
+@api.route('/profile/upload-picture', methods=['POST'])
+@jwt_required()
+def upload_profile_picture():
+    current_user_id = get_jwt_identity()
+
+    # Check if the post request has the file part
+    if 'file' not in request.files:
+        return jsonify({"error": "No file part in the request"}), 400
+
+    file = request.files['file']
+
+    # If user does not select file, browser submits empty file without filename
+    if file.filename == '':
+        return jsonify({"error": "No file selected"}), 400
+
+    if file and allowed_file(file.filename):
+        # Create a unique filename using user ID and timestamp
+        file_extension = file.filename.rsplit('.', 1)[1].lower()
+        filename = f"user_{current_user_id}_{datetime.datetime.now().strftime('%Y%m%d_%H%M%S')}.{file_extension}"
+        filename = secure_filename(filename)
+
+        # Ensure upload directory exists
+        upload_folder = 'src/front/assets/img/ProfilePictures'
+        if not os.path.exists(upload_folder):
+            os.makedirs(upload_folder)
+
+        # Save the file
+        file_path = os.path.join(upload_folder, filename)
+        file.save(file_path)
+
+        # Update user's profile_image_url in database
+        user = User.query.get(current_user_id)
+        if user:
+            user.profile_image_url = filename
+            db.session.commit()
+
+        return jsonify({
+            "message": "File uploaded successfully",
+            "filename": filename,
+            "file_path": f"/api/profile/picture/{filename}"
+        }), 200
+    else:
+        return jsonify({"error": "File type not allowed. Only PNG, JPG and JPEG files are allowed."}), 400
+
+
+@api.route('/profile/picture/<filename>', methods=['GET'])
+def get_profile_picture(filename):
+    try:
+        upload_folder = 'src/front/assets/img/ProfilePictures'
+        return send_from_directory(upload_folder, filename)
+    except FileNotFoundError:
+        return jsonify({"error": "File not found"}), 404
+
+
+@api.route('/profile/my-picture', methods=['GET'])
+@jwt_required()
+def get_my_profile_picture():
+    current_user_id = get_jwt_identity()
+    user = User.query.get(current_user_id)
+
+    if not user:
+        return jsonify({"error": "User not found"}), 404
+
+    if user.profile_image_url:
+        return jsonify({
+            "has_picture": True,
+            "filename": user.profile_image_url,
+            "file_path": f"/api/profile/picture/{user.profile_image_url}"
+        }), 200
+    else:
+        return jsonify({
+            "has_picture": False,
+            "message": "No profile picture uploaded"
+        }), 200
+
+
+# CORS(api)
+
 
 @api.route('/hello', methods=['POST', 'GET'])
 def handle_hello():
@@ -20,6 +109,8 @@ def handle_hello():
     return jsonify(response_body), 200
 
 # PAULO Endpoint para ver todos los tags
+
+
 @api.route('/tags', methods=['GET'])
 def get_tags():
     all_tags = Tags.query.all()
@@ -32,30 +123,35 @@ def get_tags():
     return jsonify(serialized_tags), 200
 
 # PAULO Endpoint para obtener todas las notas
+
+
 @api.route('/notes', methods=['GET'])
 def get_notes():
     try:
         all_notes = Notes.query.all()
         serialized_notes = [note.serialize() for note in all_notes]
         return jsonify(serialized_notes), 200
-        
+
     except Exception as e:
         print(f"Error en get_notes: {str(e)}")
         return jsonify({"msg": f"Error interno del servidor: {str(e)}"}), 500
 
+
 @api.route('/notes/search', methods=['GET'])
 def search_notes_by_tag():
     tag_query = request.args.get('tag', '').strip()
-    
+
     # Buscar notas que contengan el tag especificado
     notes_with_tag = Notes.query.join(Notes.tags).filter(
         Tags.name.ilike(f'%{tag_query}%')
     ).distinct().all()
-    
+
     serialized_notes = [note.serialize() for note in notes_with_tag]
     return jsonify(serialized_notes), 200
 
 # PAULO Endpoint para obtener todos los comentarios de una nota
+
+
 @api.route('/notes/<int:note_id>/comments', methods=['GET'])
 def get_comments(note_id):
     note = Notes.query.get(note_id)
@@ -66,6 +162,8 @@ def get_comments(note_id):
     return jsonify(comments_list), 200
 
 # PAULO Endpoint para crear una nueva nota
+
+
 @api.route('/notes', methods=["POST"])
 @jwt_required()  # un token activo es requerido
 def create_note():
@@ -111,6 +209,8 @@ def create_note():
     return jsonify(new_note.serialize()), 201
 
 # endpoint para crear un nuevo usuario
+
+
 @api.route('/user', methods=['POST'])
 def create_user():
 
@@ -154,6 +254,8 @@ def create_user():
     return jsonify({"message": "Usuario creado exitosamente"}), 201
 
 # endpoint para login y creacion de token
+
+
 @api.route('/token', methods=['POST'])
 def create_token():
 
@@ -172,6 +274,8 @@ def create_token():
     return jsonify(access_token=access_token)
 
 # Endpoint para obtener todos los usuarios
+
+
 @api.route('/users', methods=['GET'])
 def get_all_users():
     all_users = User.query.all()
@@ -181,6 +285,8 @@ def get_all_users():
     return jsonify(serialized_users), 200
 
 # PAULO Endpoint para crear un nuevo comentario en una nota
+
+
 @api.route('/notes/<int:note_id>/comments', methods=["POST"])  # deco inicial
 @jwt_required()  # deco de token
 def create_comment(note_id):
@@ -206,6 +312,8 @@ def create_comment(note_id):
         return jsonify({"msg": f"Ocurrió un error inesperado: {str(e)}"}), 500
 
 # MAIN Endpoint para perfil (ahora incluye la bio)
+
+
 @api.route('/profile', methods=['GET'])
 @jwt_required()
 def get_profile():
@@ -215,16 +323,24 @@ def get_profile():
     if user is None:
         return jsonify({"error": "Usuario no encontrado"}), 404
 
+    profile_picture_url = None
+    if user.profile_image_url:
+        profile_picture_url = f"/api/profile/picture/{user.profile_image_url}"
+
     return jsonify({
         "id": user.id,
         "username": user.username,
         "first_name": user.first_name,
         "last_name": user.last_name,
         "email": user.email,
-        "bio": user.bio or ""
+        "bio": user.bio or "",
+        "profile_picture_url": profile_picture_url,
+        "has_profile_picture": bool(user.profile_image_url)
     })
 
 # MAIN NUEVO ENDPOINT: Obtener notas del usuario actual
+
+
 @api.route('/profile/notes', methods=['GET'])
 @jwt_required()
 def get_user_notes():
@@ -248,6 +364,8 @@ def get_user_notes():
         return jsonify({"msg": f"Error: {str(e)}"}), 500
 
 # Endpoint para obtener una nota por ID
+
+
 @api.route('/notes/<int:note_id>', methods=['GET'])
 def get_note_by_id(note_id):
     note = Notes.query.get(note_id)
@@ -274,6 +392,8 @@ def get_note_by_id(note_id):
     return jsonify(serialized_note), 200
 
 # Endpoint para actualizar la bio del usuario
+
+
 @api.route('/profile/bio', methods=['PUT'])
 @jwt_required()
 def update_user_bio():
@@ -289,6 +409,8 @@ def update_user_bio():
     return jsonify({"message": "Bio actualizada exitosamente", "bio": user.bio}), 200
 
 # MAIN NUEVO ENDPOINT: para actualizar un comentario
+
+
 @api.route('/comments/<int:comment_id>', methods=['PUT'])
 @jwt_required()
 def update_comment(comment_id):
@@ -324,6 +446,8 @@ def update_comment(comment_id):
         return jsonify({"msg": f"Ocurrió un error al actualizar el comentario: {str(e)}"}), 500
 
 # MAIN NUEVO ENDPOINT: para eliminar un comentario
+
+
 @api.route('/comments/<int:comment_id>', methods=['DELETE'])
 @jwt_required()
 def delete_comment(comment_id):
@@ -344,6 +468,8 @@ def delete_comment(comment_id):
         return jsonify({"msg": f"Ocurrió un error al eliminar el comentario: {str(e)}"}), 500
 
 # endpoint para eliminar una nota
+
+
 @api.route('/notes/<int:note_id>', methods=['DELETE'])
 @jwt_required()
 def delete_note(note_id):
@@ -367,35 +493,37 @@ def delete_note(note_id):
         return jsonify({"msg": f"Ocurrió un error inesperado: {str(e)}"}), 500
 
 # NUEVO ENDPOINT: Para votar en notas y comentarios
+
+
 @api.route('/vote', methods=['POST'])
 @jwt_required()
 def create_vote():
     current_user_id = get_jwt_identity()
     body = request.get_json()
-    
+
     note_id = body.get('note_id')
     comment_id = body.get('comment_id')
     vote_type = body.get('vote_type')  # 1 para positivo, -1 para negativo
-    
+
     # Validar que se vote solo en una cosa a la vez
     if not ((note_id and not comment_id) or (comment_id and not note_id)):
         return jsonify({"msg": "Debes votar en una nota o un comentario, no en ambos"}), 400
-    
+
     if vote_type not in [1, -1]:
         return jsonify({"msg": "Tipo de voto inválido"}), 400
-    
+
     # Buscar si ya existe un voto de este usuario
     if note_id:
         existing_vote = Votes.query.filter_by(
-            user_id=current_user_id, 
+            user_id=current_user_id,
             note_id=note_id
         ).first()
     else:
         existing_vote = Votes.query.filter_by(
-            user_id=current_user_id, 
+            user_id=current_user_id,
             comment_id=comment_id
         ).first()
-    
+
     if existing_vote:
         # Si el voto es del mismo tipo, no permitimos votar de nuevo
         if existing_vote.vote_type == vote_type:
@@ -418,21 +546,27 @@ def create_vote():
         return jsonify({"msg": "Voto registrado", "action": "added"}), 201
 
 # NUEVO ENDPOINT: Obtener conteo de votos para un elemento
+
+
 @api.route('/votes/count', methods=['GET'])
 def get_votes_count():
     note_id = request.args.get('note_id')
     comment_id = request.args.get('comment_id')
-    
+
     if not note_id and not comment_id:
         return jsonify({"msg": "Se requiere note_id o comment_id"}), 400
-    
+
     if note_id:
-        positive_votes = Votes.query.filter_by(note_id=note_id, vote_type=1).count()
-        negative_votes = Votes.query.filter_by(note_id=note_id, vote_type=-1).count()
+        positive_votes = Votes.query.filter_by(
+            note_id=note_id, vote_type=1).count()
+        negative_votes = Votes.query.filter_by(
+            note_id=note_id, vote_type=-1).count()
     else:
-        positive_votes = Votes.query.filter_by(comment_id=comment_id, vote_type=1).count()
-        negative_votes = Votes.query.filter_by(comment_id=comment_id, vote_type=-1).count()
-    
+        positive_votes = Votes.query.filter_by(
+            comment_id=comment_id, vote_type=1).count()
+        negative_votes = Votes.query.filter_by(
+            comment_id=comment_id, vote_type=-1).count()
+
     return jsonify({
         "positive_votes": positive_votes,
         "negative_votes": negative_votes,
@@ -440,27 +574,29 @@ def get_votes_count():
     }), 200
 
 # NUEVO ENDPOINT: Obtener el voto del usuario actual
+
+
 @api.route('/votes/my-vote', methods=['GET'])
 @jwt_required()
 def get_my_vote():
     current_user_id = get_jwt_identity()
     note_id = request.args.get('note_id')
     comment_id = request.args.get('comment_id')
-    
+
     if not note_id and not comment_id:
         return jsonify({"msg": "Se requiere note_id o comment_id"}), 400
-    
+
     if note_id:
         vote = Votes.query.filter_by(
-            user_id=current_user_id, 
+            user_id=current_user_id,
             note_id=note_id
         ).first()
     else:
         vote = Votes.query.filter_by(
-            user_id=current_user_id, 
+            user_id=current_user_id,
             comment_id=comment_id
         ).first()
-    
+
     if vote:
         return jsonify({"vote_type": vote.vote_type}), 200
     else:

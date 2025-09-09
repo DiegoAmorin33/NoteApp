@@ -1,8 +1,10 @@
+from api.routes import api, bcrypt
 import os
 from flask import Flask, request, jsonify, url_for, send_from_directory
 from flask_migrate import Migrate
 from flask_bcrypt import Bcrypt
 from flask_swagger import swagger
+
 from api.utils import APIException, generate_sitemap
 from api.models import db
 
@@ -13,17 +15,19 @@ from flask_jwt_extended import JWTManager
 from flask_cors import CORS
 
 ENV = "development" if os.getenv("FLASK_DEBUG") == "1" else "production"
-static_file_dir = os.path.join(os.path.dirname(os.path.realpath(__file__)), '../dist/')
+static_file_dir = os.path.join(os.path.dirname(
+    os.path.realpath(__file__)), '../dist/')
 app = Flask(__name__)
 app.url_map.strict_slashes = False
 
 # Permite CORS
-CORS(app)
+CORS(app, origins="*")
 
 # Configuración de la base de datos
 db_url = os.getenv("DATABASE_URL")
 if db_url is not None:
-    app.config['SQLALCHEMY_DATABASE_URI'] = db_url.replace("postgres://", "postgresql://")
+    app.config['SQLALCHEMY_DATABASE_URI'] = db_url.replace(
+        "postgres://", "postgresql://")
 else:
     app.config['SQLALCHEMY_DATABASE_URI'] = "sqlite:////tmp/test.db"
 
@@ -32,17 +36,17 @@ MIGRATE = Migrate(app, db, compare_type=True)
 db.init_app(app)
 
 
-from api.routes import api, bcrypt
-
-
 bcrypt.init_app(app)
 
 app.config["JWT_SECRET_KEY"] = "clave-de-prueba-simple-sin-caracteres-raros"
 app.config["JWT_CSRF_PROTECTION"] = False
+app.config["UPLOAD_FOLDER"] = "src/front/assets/img/ProfilePictures"
 
+UPLOAD_FOLDER = 'src/front/assets/img/ProfilePictures'
+app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 
 jwt = JWTManager(app)
- 
+
 # Setup admin y commands
 setup_admin(app)
 setup_commands(app)
@@ -51,6 +55,7 @@ setup_commands(app)
 app.register_blueprint(api, url_prefix='/api')
 
 # Handle/serialize errors like a JSON object
+
 
 @app.errorhandler(APIException)
 def handle_invalid_usage(error):
