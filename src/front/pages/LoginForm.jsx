@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate, Link } from "react-router-dom";
 import useGlobalReducer from '../hooks/useGlobalReducer';
-import logo from "/workspaces/proyecto-final-pt53-grupo3/src/front/assets/img/logo1.png";
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faEye, faEyeSlash } from '@fortawesome/free-solid-svg-icons';
 
@@ -38,19 +37,9 @@ const LoginForm = () => {
     return (
         <div className="container-fluid">
             <div className="row vh-100 d-flex align-items-center">
-
                 <div className="col-md-4 col-lg-4 d-none d-md-block h-100 sidebar-custom-color"></div>
-
                 <div className="col-12 col-md-4 col-lg-4">
                     <form onSubmit={handleLogin} className="p-4">
-                        <div className="form-logo d-flex flex-column align-items-center mb-4">
-                            <img
-                                src={logo}
-                                alt="Logo"
-                                className="rounded"
-                                style={{ width: "170px", height: "120px", objectFit: "contain" }}
-                            />
-                        </div>
                         <h2 className="text-center mb-4">Iniciar Sesión</h2>
                         {error && <div className="alert alert-danger">{error}</div>}
                         <div className="form-floating mb-3">

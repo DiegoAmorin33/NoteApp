@@ -18,7 +18,7 @@ const NoteDetail = () => {
   const navigate = useNavigate();
 
   // Se usa una URL de backend hardcodeada para evitar el error de import.meta.env
-  const API_URL = "https://glorious-cod-5g5ggj5wjj7whv5qp-3001.app.github.dev/";
+  const API_URL = "https://bookish-chainsaw-v6ww997qw5ppf5j-3001.app.github.dev/";
 
   // Función para obtener los comentarios 
   const fetchComments = async () => {

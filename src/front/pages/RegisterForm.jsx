@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from "react-router-dom";
 import useGlobalReducer from '../hooks/useGlobalReducer';
-import logo from "/workspaces/proyecto-final-pt53-grupo3/src/front/assets/img/logo1.png";
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faEye, faEyeSlash } from '@fortawesome/free-solid-svg-icons';
 
@@ -58,9 +57,6 @@ const RegisterForm = () => {
                 <div className="col-md-4 col-lg-4 d-none d-md-block h-100 sidebar-custom-color"></div>
                 <div className="col-12 col-md-4 col-lg-4">
                     <form className="p-4" onSubmit={handleUserSubmit}>
-                        <div className="form-logo d-flex flex-column align-items-center mb-4">
-                            <img src={logo} alt="Logo" className="rounded" style={{ width: "170px", height: "120px", objectFit: "contain" }}/>
-                        </div>
                         <h5 className="mb-3 fw-normal text-center">Formulario de Registro</h5>
                         {error && <div className="alert alert-danger">{error}</div>}
                         
