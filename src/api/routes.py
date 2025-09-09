@@ -7,6 +7,8 @@ from flask_jwt_extended import create_access_token
 from flask_jwt_extended import jwt_required, get_jwt_identity
 import datetime
 from api.models import UserNoteFavorites
+from google.auth.transport import requests as google_requests
+from google.oauth2 import id_token
 
 api = Blueprint('api', __name__)
 bcrypt = Bcrypt()
@@ -525,3 +527,37 @@ def get_favorites():
             notes.append(note.serialize())
 
     return jsonify(notes), 200
+
+
+    #------------------ api de google
+
+@api.route('/google-login', methods=['POST'])
+def google_login():
+    data = request.get_json()
+    token = data.get("token")
+
+    try:
+        idinfo = id_token.verify_oauth2_token(token, google_requests.Request(), "413075624594-02qpect45v5o3uarjnkr42ldob11s4lk.apps.googleusercontent.com")
+        email = idinfo['email']
+        first_name = idinfo.get('given_name', '')
+        last_name = idinfo.get('family_name', '')
+
+        user = User.query.filter_by(email=email).first()
+        if not user:
+            # Crear usuario si no existe
+            user = User(
+                email=email,
+                first_name=first_name,
+                last_name=last_name,
+                username=email.split('@')[0],
+                password_hash="",  # vacío porque no se usará
+                is_active=True
+            )
+            db.session.add(user)
+            db.session.commit()
+
+        access_token = create_access_token(identity=str(user.id))
+        return jsonify(access_token=access_token), 200
+
+    except ValueError:
+        return jsonify({"error": "Token inválido"}), 400
