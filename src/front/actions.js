@@ -130,6 +130,30 @@ export const actions = (dispatch) => ({
             });
     },
 
+    // === LOGIN CON GOOGLE ===
+    loginWithGoogle: (googleToken) => {
+        return fetch(`${backendUrl}/api/google-login`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ token: googleToken })
+        })
+        .then(async (resp) => {
+            const data = await resp.json();
+            if (!resp.ok) throw new Error(data.error || "Error en login con Google");
+
+            localStorage.setItem("token", data.access_token);
+            dispatch({ type: "LOGIN_SUCCESS", payload: data.access_token });
+
+            // Traer info del usuario
+            return actions(dispatch).getUser(data.access_token);
+        })
+        .then(() => true)
+        .catch((err) => {
+            console.error("❌ Error login Google:", err.message);
+            return false;
+        });
+    },
+
     // === LOGOUT ===
     logout: () => {
         console.log("🚪 Logging out...");
@@ -215,7 +239,6 @@ export const actions = (dispatch) => ({
     // FAVORITOS CON BACKEND
     // ===============================
 
-    // Obtener lista de favoritos
     getFavorites: () => {
         const token = localStorage.getItem("token");
         if (!token) return;
@@ -237,7 +260,6 @@ export const actions = (dispatch) => ({
             });
     },
 
-    // Agregar favorito
     addFavorite: (noteId) => {
         const token = localStorage.getItem("token");
         if (!token) return;
@@ -263,7 +285,6 @@ export const actions = (dispatch) => ({
             });
     },
 
-    // Eliminar favorito
     removeFavorite: (noteId) => {
         const token = localStorage.getItem("token");
         if (!token) return;
@@ -288,7 +309,6 @@ export const actions = (dispatch) => ({
             });
     },
 
-    // Setear favoritos directamente (por si vienen del perfil)
     setFavorites: (favorites) => {
         dispatch({ type: "SET_FAVORITES", payload: favorites });
     },
