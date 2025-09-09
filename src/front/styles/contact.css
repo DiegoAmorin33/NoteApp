@@ -1,0 +1,73 @@
+.contact-container {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  overflow: hidden;
+}
+
+/* Fondo con logo difuminado */
+.contact-container::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: url("../assets/img/logo-pequeño.png") no-repeat bottom right;
+  background-size: 25%;
+  opacity: 0.08;
+  pointer-events: none;
+  z-index: 0;
+}
+
+/* Overlay oscuro */
+.overlay {
+  position: relative;
+  z-index: 1;
+  width: 90%;
+  max-width: 900px;
+  padding: 2rem;
+  border-radius: 12px;
+  background: rgba(0, 0, 0, 0.85); /* un poco más opaco */
+  z-index: 1;
+}
+
+/* Grid de tarjetas */
+.contact-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 1.5rem;
+}
+
+/* Tarjetas */
+.contact-card {
+  background: rgba(255, 255, 255, 0.07);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  padding: 1rem;
+  border-radius: 12px;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.contact-card:hover {
+  transform: scale(1.03);
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.35);
+}
+
+/* Links */
+.github-link {
+  color: #ff7f11;
+  text-decoration: none;
+  font-weight: bold;
+}
+
+.github-link:hover {
+  color: #ffa94d;
+}
+
+.email-link {
+  color: #ffffff;
+  text-decoration: none;
+}
+
+.email-link:hover {
+  color: #6edb8f;
+}

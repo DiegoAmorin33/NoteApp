@@ -1,4 +1,4 @@
-/* Fondo general (oscuro con toque azul) */
+/* ====== Auth (login/register) ====== */
 .auth-wrapper {
   min-height: 100vh;
   display: flex;
@@ -8,7 +8,6 @@
   padding: 20px;
 }
 
-/* Tarjeta */
 .auth-card {
   width: 100%;
   max-width: 400px;
@@ -18,30 +17,20 @@
   box-shadow: 0 4px 14px rgba(0,0,0,0.3);
 }
 
-/* Botón principal naranja */
-.btn.auth-primary-btn {
-  width: 100%;
-  padding: 12px;
-  background-color: #f97316 !important;
-  color: white !important;
-  border: none !important;
-  border-radius: 6px;
-  font-weight: bold;
-  cursor: pointer;
-  transition: background 0.2s ease;
-}
-.btn.auth-primary-btn:hover {
-  background-color: #ea580c !important;
+.auth-title {
+  text-align: center;       
+  font-weight: 600;         
+  font-size: 1.8rem;        
+  margin-bottom: 1rem;      
+  color: #111827;           
 }
 
-/* Inputs con borde azul celeste */
 .auth-input.form-control:focus {
   border-color: #38bdf8;
   outline: none;
   box-shadow: 0 0 4px #38bdf8;
 }
 
-/* Ojitos dentro del campo */
 .auth-toggle-visibility {
   position: absolute;
   top: 50%;
@@ -51,22 +40,12 @@
   font-size: 1.1rem;
 }
 
-/* Links en verde */
 .auth-footer a {
   color: #16a34a;
   font-weight: bold;
 }
 .auth-footer a:hover {
   text-decoration: underline;
-}
-
-
-.auth-title {
-  text-align: center;       
-  font-weight: 600;         
-  font-size: 1.8rem;        
-  margin-bottom: 1rem;      
-  color: #111827;           
 }
 
 .auth-wrapper, 
@@ -79,71 +58,113 @@
   font-family: 'Roboto', sans-serif;
 }
 
-
-/* navbar 
-
-/* Fondo y sombra */
-.navbar-custom {
-  background: linear-gradient(135deg, #0d1b2a, #1c1c1c);
-  color: #ffffff;
-  box-shadow: 0 4px 10px rgba(0,0,0,0.25);
+/* Botón principal de auth */
+.btn.auth-primary-btn {
+  width: 100%;
+  padding: 12px;
+  background-color: #f97316 !important;
+  color: white !important;
+  border: none !important;
+  border-radius: 8px;
+  font-weight: bold;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+}
+.btn.auth-primary-btn:hover {
+  background-color: #ea580c !important;
+  transform: translateY(-1px);
 }
 
-/* Logo */
-.navbar-logo h2 {
-  color: #f97316;
-  font-family: 'Roboto', sans-serif;
-  font-weight: 700;
-  margin: 0;
+/* ====== Navbar ====== */
+.navbar-custom {
+  background-color: #ffffff;
+  color: #0d1b2a;
+  box-shadow: 0 4px 10px rgba(0,0,0,0.1);
 }
 
 /* Links */
-.navbar-custom .nav-link {
-  color: #ffffff;
+.navbar-custom .navbar-link {
+  color: #0d1b2a;
   font-weight: 500;
-  transition: color 0.2s ease;
 }
-.navbar-custom .nav-link:hover {
+.navbar-custom .navbar-link:hover {
   color: #f97316;
 }
 
-/* Botones */
+/* Botones del navbar (modernizados) */
+.navbar-custom .btn {
+  border-radius: 8px;
+  font-weight: 600;
+  padding: 6px 14px;
+  transition: all 0.2s ease;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+}
+
+/* Principal (naranja) */
 .navbar-custom .btn-primary {
   background-color: #f97316;
-  border-color: #f97316;
-  font-weight: 600;
-  transition: background 0.2s ease;
+  border: none;
+  color: #fff;
 }
 .navbar-custom .btn-primary:hover {
   background-color: #ea580c;
+  transform: translateY(-1px);
 }
 
+/* Secundario (outline naranja) */
 .navbar-custom .btn-outline-primary {
-  color: #ffffff;
-  border-color: #f97316;
+  border: 2px solid #f97316;
+  color: #f97316;
+  background-color: transparent;
 }
 .navbar-custom .btn-outline-primary:hover {
   background-color: #f97316;
-  color: #ffffff;
-  border-color: #f97316;
+  color: #fff;
+  transform: translateY(-1px);
 }
 
+/* Neutro (azul oscuro) */
 .navbar-custom .btn-outline-dark {
-  color: #ffffff;
-  border-color: #ffffff;
+  border: 2px solid #0d1b2a;
+  color: #0d1b2a;
+  background: transparent;
 }
 .navbar-custom .btn-outline-dark:hover {
-  background-color: #ffffff;
-  color: #0d1b2a;
+  background-color: #0d1b2a;
+  color: #fff;
+  transform: translateY(-1px);
+}
+
+/* Peligro (logout) */
+.navbar-custom .btn-danger {
+  background-color: #db3636;
+  border: none;
+}
+.navbar-custom .btn-danger:hover {
+  background-color: #b91c1c;
+  transform: translateY(-1px);
+}
+
+/* Dropdown */
+.navbar-custom .dropdown-toggle {
+  border-radius: 8px;
+  background-color: #f97316;
+  border: none;
+  font-weight: 600;
+  padding: 6px 14px;
+}
+.navbar-custom .dropdown-toggle:hover {
+  background-color: #ea580c;
 }
 
 /* Usuario */
 .username {
   font-weight: 500;
-  color: #ffffff;
+  color: #0d1b2a;
 }
 
-/* Responsivo */
+/* Responsive */
 @media (max-width: 768px) {
   .navbar-custom .container {
     flex-direction: column;
@@ -153,4 +174,38 @@
     flex-wrap: wrap;
     margin-top: 10px;
   }
+}
+
+.navbar-custom .nabvar-link {
+  color: #0d1b2a;
+  font-weight: 500;
+  text-decoration: none;
+  transition: color 0.2s ease;
+}
+
+.navbar-custom .navbar-link:hover {
+  color: #f97316; /* Naranja del logo */
+}
+/* ====== Footer ====== */
+.footer-custom {
+  background-color: #ffffff; /* Igual que navbar */
+  color: #0d1b2a;
+  box-shadow: 0 -2px 6px rgba(0,0,0,0.1); /* Sombra superior */
+  width: 100%;
+}
+
+.footer-custom p {
+  font-weight: 500;
+  color: #0d1b2a;
+}
+
+.footer-custom .footer-link {
+  color: #0d1b2a;
+  font-weight: 500;
+  text-decoration: none;
+  transition: color 0.2s ease;
+}
+
+.footer-custom .footer-link:hover {
+  color: #f97316; /* Naranja del logo */
 }
