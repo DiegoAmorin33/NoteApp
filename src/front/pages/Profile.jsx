@@ -9,6 +9,50 @@ const Profile = () => {
   const [isEditingBio, setIsEditingBio] = useState(false);
   const navigate = useNavigate();
 
+  // Function to properly close modal and reset page state
+  const closeModal = () => {
+    const modal = document.getElementById("profile-picture-pfp");
+    
+    // Try multiple methods to close the modal
+    if (window.bootstrap && window.bootstrap.Modal) {
+      const bootstrapModal = window.bootstrap.Modal.getInstance(modal);
+      if (bootstrapModal) {
+        bootstrapModal.hide();
+      }
+    }
+    
+    // Force close modal using jQuery if available
+    if (window.$ && window.$.fn.modal) {
+      window.$('#profile-picture-pfp').modal('hide');
+    }
+    
+    // Manual cleanup - remove all modal-related classes and elements
+    setTimeout(() => {
+      // Remove modal backdrop
+      const backdrops = document.querySelectorAll('.modal-backdrop');
+      backdrops.forEach(backdrop => backdrop.remove());
+      
+      // Reset body classes and styles
+      document.body.classList.remove('modal-open');
+      document.body.style.overflow = '';
+      document.body.style.paddingRight = '';
+      
+      // Hide modal manually
+      if (modal) {
+        modal.classList.remove('show');
+        modal.style.display = 'none';
+        modal.setAttribute('aria-hidden', 'true');
+        modal.removeAttribute('aria-modal');
+      }
+      
+      // Reset file input
+      const fileInput = document.querySelector('#profile-picture-pfp input[type="file"]');
+      if (fileInput) {
+        fileInput.value = '';
+      }
+    }, 100);
+  };
+
   // Debug: Verificar todas las variables de entorno
   console.log("🔍 Environment variables:", {
     VITE_BACKEND_URL: import.meta.env.VITE_BACKEND_URL,
@@ -111,7 +155,7 @@ const Profile = () => {
     const token = localStorage.getItem("token");
     if (!token) {
       console.error("No token found, cannot upload file.");
-      alert("No authentication token found. Please log in again.");
+
       return;
     }
 
@@ -149,14 +193,15 @@ const Profile = () => {
       if (response.ok) {
         const data = await response.json();
         console.log("File uploaded successfully:", data);
-        // Close modal and refresh profile
-        const modal = document.getElementById("profile-picture-pfp");
-        const bootstrapModal = bootstrap.Modal?.getInstance(modal);
-        if (bootstrapModal) {
-          bootstrapModal.hide();
-        }
-        fetchUserProfile();
-        alert("Profile picture uploaded successfully!");
+        
+        // Close modal properly
+        closeModal();
+        
+        // Refresh profile data to show new image
+        await fetchUserProfile();
+        
+        // Show success message
+
       } else {
         const errorText = await response.text();
         console.error("Error response:", {
@@ -183,6 +228,46 @@ const Profile = () => {
         name: error.name,
       });
       alert(`Network error: ${error.message}. Check console for details.`);
+    }
+  };
+
+  const handleRemoveProfilePicture = async () => {
+    const token = localStorage.getItem("token");
+    if (!token) {
+      alert("No authentication token found. Please log in again.");
+      return;
+    }
+
+    if (!confirm("¿Estás seguro de que quieres eliminar tu foto de perfil?")) {
+      return;
+    }
+
+    try {
+      const backendUrl = import.meta.env.VITE_BACKEND_URL;
+      const url = `${backendUrl}/api/profile/remove-picture`.replace(/([^:]\/)\/+/g, "$1");
+
+      const response = await fetch(url, {
+        method: "DELETE",
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        
+        // Close modal properly
+        closeModal();
+
+        await fetchUserProfile();
+      } else {
+        const errorText = await response.text();
+        console.error("Error removing profile picture:", errorText);
+      }
+    } catch (error) {
+      console.error("Error removing profile picture:", error);
+
     }
   };
 
@@ -286,7 +371,9 @@ const Profile = () => {
     hasUserProfile: !!userProfile,
     profilePictureUrl: userProfile?.profile_picture_url,
     backendUrl: import.meta.env.VITE_BACKEND_URL,
-    fullImageUrl: userProfile?.profile_picture_url ? `${import.meta.env.VITE_BACKEND_URL}${userProfile.profile_picture_url}` : null,
+    fullImageUrl: userProfile?.profile_picture_url
+      ? `${import.meta.env.VITE_BACKEND_URL}${userProfile.profile_picture_url}`
+      : null,
   });
 
   if (loading && !userProfile) {
@@ -362,20 +449,27 @@ const Profile = () => {
                               border: "none",
                               display: "block",
                             }}
-                            onLoad={() => console.log("✅ Profile image loaded successfully")}
+                            onLoad={() =>
+                              console.log(
+                                "✅ Profile image loaded successfully"
+                              )
+                            }
                             onError={(e) => {
-                              console.error("❌ Profile image failed to load:", {
-                                src: e.target.src,
-                                error: e.type,
-                                userProfile: userProfile
-                              });
+                              console.error(
+                                "❌ Profile image failed to load:",
+                                {
+                                  src: e.target.src,
+                                  error: e.type,
+                                  userProfile: userProfile,
+                                }
+                              );
                             }}
                           />
                         ) : (
                           <div className="text-center">
                             <i className="fa fa-camera fa-2x text-muted mb-2"></i>
                             <br />
-                            <i className="text-muted mb-2">Click para editar</i>
+                            <i className="text-muted mb-2 " >Click para editar</i>
                           </div>
                         )}
                       </div>
@@ -453,20 +547,30 @@ const Profile = () => {
                           >
                             Cancelar
                           </button>
-                          <button
-                            type="button"
-                            className="btn btn-primary btn-sm"
-                            onClick={() => {
-                              const fileInput = document.querySelector(
-                                '#profile-picture-pfp input[type="file"]'
-                              );
-                              if (fileInput) {
-                                fileInput.click();
-                              }
-                            }}
-                          >
-                            Guardar Imagen
-                          </button>
+                          {userProfile?.profile_picture_url ? (
+                            <button
+                              type="button"
+                              className="btn btn-danger"
+                              onClick={handleRemoveProfilePicture}
+                            >
+                              Eliminar foto
+                            </button>
+                          ) : (
+                            <button
+                              type="button"
+                              className="btn btn-primary"
+                              onClick={() => {
+                                const fileInput = document.querySelector(
+                                  '#profile-picture-pfp input[type="file"]'
+                                );
+                                if (fileInput) {
+                                  fileInput.click();
+                                }
+                              }}
+                            >
+                              Guardar Imagen
+                            </button>
+                          )}
                         </div>
                       </div>
                     </div>
@@ -551,7 +655,19 @@ const Profile = () => {
                     <div className="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-4">
                       {userNotes.map((note) => (
                         <div key={note.note_id} className="col">
-                          <div className="card h-100 shadow-sm d-flex flex-column">
+                          <div className="card h-100 shadow-sm d-flex flex-column"style={{
+                              width: "100%",
+                              maxWidth: "24rem",
+                              transition: "transform 0.2s, box-shadow 0.2s",
+                            }}
+                            onMouseEnter={(e) => {
+                              e.currentTarget.style.transform = "translateY(-5px)";
+                              e.currentTarget.style.boxShadow = "0 4px 15px rgba(0,0,0,0.2)";
+                            }}
+                            onMouseLeave={(e) => {
+                              e.currentTarget.style.transform = "translateY(0)";
+                              e.currentTarget.style.boxShadow = "0 1px 3px rgba(0,0,0,0.12)";
+                            }}>
                             <div className="card-body d-flex flex-column">
                               <div className="d-flex justify-content-between align-items-start mb-2">
                                 <h5
