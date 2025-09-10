@@ -1,31 +1,28 @@
 import React, { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import useGlobalReducer from "../hooks/useGlobalReducer";
+import "/workspaces/proyecto-final-pt53-grupo3/src/front/Home.css";
 
 export const Home = () => {
-  // Estado global y acciones para favoritos
   const { store, actions } = useGlobalReducer();
 
   const [notes, setNotes] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [userVotes, setUserVotes] = useState({});
-  const [sortOption, setSortOption] = useState("recent"); // 'recent', 'voted', 'commented'
+  const [sortOption, setSortOption] = useState("recent");
   const [searchTerm, setSearchTerm] = useState("");
   const [activeSearchTerm, setActiveSearchTerm] = useState("");
   const navigate = useNavigate();
 
-
-  const backendUrl = "https://bookish-chainsaw-v6ww997qw5ppf5j-3001.app.github.dev/";
+  const backendUrl = "https://glorious-cod-5g5ggj5wjj7whv5qp-3001.app.github.dev/";
 
   useEffect(() => {
     fetchNotes();
 
-    // Al montar el componente, cargar favoritos del usuario
     if (localStorage.getItem("token")) {
       actions.getFavorites();
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const handleTokenExpired = () => {
@@ -191,7 +188,6 @@ export const Home = () => {
     }
   };
 
-  // --- FAVORITOS ---
   const isNoteFavorited = (noteId) => {
     return store.favorites.some((fav) => (fav.note_id || fav.id) === noteId);
   };
@@ -207,10 +203,8 @@ export const Home = () => {
     const noteId = note.note_id || note.id;
 
     if (isNoteFavorited(noteId)) {
-      // Quitar de favoritos
       await actions.removeFavorite(noteId);
     } else {
-      // Agregar a favoritos
       await actions.addFavorite(noteId);
     }
   };
@@ -246,6 +240,25 @@ export const Home = () => {
     }
   };
 
+  const getTagColorClass = (tags) => {
+    if (!tags || tags.length === 0) return "";
+    
+    const firstTag = typeof tags[0] === 'object' ? tags[0].name : tags[0];
+    
+    switch(firstTag.toLowerCase()) {
+      case 'deportes':
+        return 'orange';
+      case 'culinario':
+        return 'blue';
+      case 'salud mental':
+        return 'green';
+      case 'relaciones amorosas':
+        return 'rose';
+      default:
+        return '';
+    }
+  };
+
   if (loading) {
     return (
       <div className="container mt-4">
@@ -273,14 +286,12 @@ export const Home = () => {
     );
   }
 
-  // Filtrar notas por término de búsqueda activo
   const filteredNotes = notes.filter((note) => {
     if (!activeSearchTerm.trim()) return true;
     const title = (note.title || "").toLowerCase();
     return title.includes(activeSearchTerm.toLowerCase());
   });
 
-  // Creamos el array ordenado según la opción seleccionada
   const sortedNotes = [...filteredNotes].sort((a, b) => {
     if (sortOption === "recent") {
       return (
@@ -327,7 +338,6 @@ export const Home = () => {
         </div>
       </div>
 
-      {/* Filtro de ordenamiento */}
       <div className="mb-3 d-flex align-items-center gap-2">
         <label htmlFor="sortSelect" className="fw-semibold">
           Ordenar por:
@@ -344,7 +354,6 @@ export const Home = () => {
         </select>
       </div>
 
-      {/* Barra de búsqueda */}
       <div className="mb-3">
         <form
           onSubmit={handleSearch}
@@ -408,140 +417,143 @@ export const Home = () => {
           )}
         </div>
       ) : (
-        <div className="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-4">
-          {sortedNotes.map((note) => (
-            <div key={note.note_id || note.id} className="col">
-              <div className="card h-100 shadow-sm d-flex flex-column" style={{
-                              width: "100%",
-                              maxWidth: "24rem",
-                              transition: "transform 0.2s, box-shadow 0.2s",
-                            }}
-                            onMouseEnter={(e) => {
-                              e.currentTarget.style.transform = "translateY(-5px)";
-                              e.currentTarget.style.boxShadow = "0 4px 15px rgba(0,0,0,0.2)";
-                            }}
-                            onMouseLeave={(e) => {
-                              e.currentTarget.style.transform = "translateY(0)";
-                              e.currentTarget.style.boxShadow = "0 1px 3px rgba(0,0,0,0.12)";
-                            }}
->
-                <div className="card-body d-flex flex-column ">
-                  <div className="d-flex justify-content-between align-items-start mb-2">
-                    <h5 className="card-title text-truncate" title={note.title}>
-                      {note.title || "Sin título"}
-                    </h5>
-                    {note.is_anonymous && (
-                      <span className="badge bg-info ms-2">Anónimo</span>
-                    )}
-                  </div>
-
-                  <p className="card-text text-muted">
-                    {truncateText(note.content)}
-                  </p>
-
-                  {note.tags && note.tags.length > 0 && (
-                    <div className="mb-3">
-                      <div className="d-flex flex-wrap gap-1">
-                        {note.tags.map((tag, index) => (
-                          <span
-                            key={index}
-                            className="badge bg-primary"
-                            style={{ fontSize: "0.75rem" }}
-                          >
-                            {typeof tag === "object" ? tag.name : tag}
-                          </span>
-                        ))}
+        <div className="cards"> 
+          <div className="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-4">
+            {sortedNotes.map((note) => {
+              const colorClass = getTagColorClass(note.tags);
+              
+              return (
+                <div key={note.note_id || note.id} className="col">
+                  <div 
+                    className={`card h-100 shadow-sm d-flex flex-column ${colorClass}`}
+                    style={{
+                      width: "100%",
+                      maxWidth: "24rem",
+                      transition: "transform 0.2s, box-shadow 0.2s",
+                    }}
+                    onMouseEnter={(e) => {
+                      e.currentTarget.style.transform = "translateY(-5px)";
+                      e.currentTarget.style.boxShadow = "0 4px 15px rgba(0,0,0,0.2)";
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.transform = "translateY(0)";
+                      e.currentTarget.style.boxShadow = "0 1px 3px rgba(0,0,0,0.12)";
+                    }}
+                  >
+                    <div className="card-body d-flex flex-column">
+                      <div className="d-flex justify-content-between align-items-start mb-2">
+                        <h5 className="card-title text-truncate" title={note.title}>
+                          {note.title || "Sin título"}
+                        </h5>
+                        {note.is_anonymous && (
+                          <span className="badge bg-info ms-2">Anónimo</span>
+                        )}
                       </div>
-                    </div>
-                  )}
 
-                  <div className="mt-auto">
-                    <small className="text-muted">
-                      <i className="fas fa-clock me-1"></i>
-                      {formatDate(note.created_at || note.date)}
-                    </small>
+                      <p className="card-text">
+                        {truncateText(note.content)}
+                      </p>
 
-                    {note.user && !note.is_anonymous && (
-                      <div className="mt-1">
-                        <small className="text-muted">
-                          <i className="fas fa-user me-1"></i>
-                          {note.user.username ||
-                            (note.user.first_name && note.user.last_name
-                              ? `${note.user.first_name} ${note.user.last_name}`
-                              : "Usuario")}
+                      {note.tags && note.tags.length > 0 && (
+                        <div className="mb-3">
+                          <div className="d-flex flex-wrap gap-1">
+                            {note.tags.map((tag, index) => (
+                              <span
+                                key={index}
+                                className="badge bg-light text-dark"
+                                style={{ fontSize: "0.75rem" }}
+                              >
+                                {typeof tag === "object" ? tag.name : tag}
+                              </span>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+
+                      <div className="mt-auto">
+                        <small className="text-light opacity-75">
+                          <i className="fas fa-clock me-1"></i>
+                          {formatDate(note.created_at || note.date)}
                         </small>
+
+                        {note.user && !note.is_anonymous && (
+                          <div className="mt-1">
+                            <small className="text-light opacity-75">
+                              <i className="fas fa-user me-1"></i>
+                              {note.user.username ||
+                                (note.user.first_name && note.user.last_name
+                                  ? `${note.user.first_name} ${note.user.last_name}`
+                                  : "Usuario")}
+                            </small>
+                          </div>
+                        )}
                       </div>
-                    )}
-                  </div>
-                </div>
+                    </div>
+                  
+                    <div className="card-footer bg-transparent border-top-0">
+                      <div className="d-flex justify-content-between align-items-center">
+                        <Link
+                          to={`/noteDetail/${note.note_id || note.id}`}
+                          className="btn btn-outline-light btn-sm"
+                        >
+                          Leer más
+                        </Link>
 
-                {/* Footer con botones de acción */}
-                <div className="card-footer bg-transparent border-top-0">
-                  <div className="d-flex justify-content-between align-items-center">
-                    <Link
-                      to={`/noteDetail/${note.note_id || note.id}`}
-                      className="btn btn-outline-primary btn-sm"
-                    >
-                      Leer más
-                    </Link>
+                        <div className="d-flex gap-2 align-items-center">
+                          <button
+                            className={`btn btn-sm ${
+                              isNoteFavorited(note.note_id || note.id)
+                                ? "btn-warning"
+                                : "btn-outline-light"
+                            }`}
+                            onClick={() => toggleFavorite(note)}
+                            title={
+                              isNoteFavorited(note.note_id || note.id)
+                                ? "Quitar de favoritos"
+                                : "Agregar a favoritos"
+                            }
+                          >
+                            <i className="fas fa-star"></i>
+                          </button>
 
-                    <div className="d-flex gap-2 align-items-center">
-                      {/* Botón Favoritos */}
-                      <button
-                        className={`btn btn-sm ${
-                          isNoteFavorited(note.note_id || note.id)
-                            ? "btn-warning"
-                            : "btn-outline-warning"
-                        }`}
-                        onClick={() => toggleFavorite(note)}
-                        title={
-                          isNoteFavorited(note.note_id || note.id)
-                            ? "Quitar de favoritos"
-                            : "Agregar a favoritos"
-                        }
-                      >
-                        <i className="fas fa-star"></i>
-                      </button>
+                          <button
+                            className={`btn btn-sm ${
+                              userVotes[note.note_id || note.id] === 1
+                                ? "btn-success"
+                                : "btn-outline-light"
+                            }`}
+                            onClick={() => handleVote(note.note_id || note.id, 1)}
+                            title="Votar positivamente"
+                          >
+                            <i className="fas fa-thumbs-up"></i>
+                            <span className="ms-1">{note.positive_votes || 0}</span>
+                          </button>
 
-                      {/* Botón Voto positivo */}
-                      <button
-                        className={`btn btn-sm ${
-                          userVotes[note.note_id || note.id] === 1
-                            ? "btn-success"
-                            : "btn-outline-success"
-                        }`}
-                        onClick={() => handleVote(note.note_id || note.id, 1)}
-                        title="Votar positivamente"
-                      >
-                        <i className="fas fa-thumbs-up"></i>
-                        <span className="ms-1">{note.positive_votes || 0}</span>
-                      </button>
+                          <button
+                            className={`btn btn-sm ${
+                              userVotes[note.note_id || note.id] === -1
+                                ? "btn-danger"
+                                : "btn-outline-light"
+                            }`}
+                            onClick={() => handleVote(note.note_id || note.id, -1)}
+                            title="Votar negativamente"
+                          >
+                            <i className="fas fa-thumbs-down"></i>
+                            <span className="ms-1">{note.negative_votes || 0}</span>
+                          </button>
 
-                      {/* Botón Voto negativo */}
-                      <button
-                        className={`btn btn-sm ${
-                          userVotes[note.note_id || note.id] === -1
-                            ? "btn-danger"
-                            : "btn-outline-danger"
-                        }`}
-                        onClick={() => handleVote(note.note_id || note.id, -1)}
-                        title="Votar negativamente"
-                      >
-                        <i className="fas fa-thumbs-down"></i>
-                        <span className="ms-1">{note.negative_votes || 0}</span>
-                      </button>
-
-                      {/* Contador de comentarios */}
-                      <small className="text-muted">
-                        <i className="fas fa-comment me-1"></i>
-                        {note.comments_count || 0}
-                      </small>
+                          <small className="text-light opacity-75">
+                            <i className="fas fa-comment me-1"></i>
+                            {note.comments_count || 0}
+                          </small>
+                        </div>
+                      </div>
                     </div>
                   </div>
                 </div>
-              </div>
-            </div>
-          ))}
+              );
+            })}
+          </div>
         </div>
       )}
 
