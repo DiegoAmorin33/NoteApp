@@ -18,7 +18,23 @@ const NoteDetail = () => {
   const navigate = useNavigate();
 
   // Se usa una URL de backend hardcodeada para evitar el error de import.meta.env
-  const API_URL = "https://bookish-chainsaw-v6ww997qw5ppf5j-3001.app.github.dev/";
+  const API_URL = "https://glorious-cod-5g5ggj5wjj7whv5qp-3001.app.github.dev/";
+
+  // Función para obtener el color según el tag
+  const getTagColor = (tagName) => {
+    switch(tagName.toLowerCase()) {
+      case 'deportes':
+        return { backgroundColor: '#1EA546', color: 'white' };
+      case 'culinario':
+        return { backgroundColor: '#309FD8', color: 'white' };
+      case 'salud mental':
+        return { backgroundColor: '#EC6A23', color: 'white' };
+      case 'relaciones amorosas':
+        return { backgroundColor: '#df437e', color: 'white' };
+      default:
+        return { backgroundColor: '#f8f9fa', color: 'black' };
+    }
+  };
 
   // Función para obtener los comentarios 
   const fetchComments = async () => {
@@ -398,16 +414,26 @@ const NoteDetail = () => {
   const currentUserId = getCurrentUserId();
   const isCommentAuthor = (commentUserId) => currentUserId && commentUserId.toString() === currentUserId;
 
+  // Obtener el tag principal y su color
+  const mainTag = note.tags && note.tags.length > 0 ? 
+    (typeof note.tags[0] === 'object' ? note.tags[0].name : note.tags[0]) : 
+    '';
+  
+  const tagStyle = getTagColor(mainTag);
+
   return (
     <div className="row">
-      <div className="col-6 mt-5 m-auto bg-secondary-subtle rounded-strong">
+      <div 
+        className="col-6 mt-5 m-auto rounded-strong note-detail-container"
+        style={tagStyle}
+      >
         <div className="text-end mt-2 me-3">
           {canDeleteNote && (
             <button className="btn" onClick={deleteNote}> <i className="fa-solid fa-circle-xmark"></i></button>
           )}
         </div>
 
-        <h1 className="ms-5">{note.title}</h1>
+        <h1 className="ms-5 card-title">{note.title}</h1>
 
         {/* Renderizado condicional si la nota es anónima o no */}
         {!note.is_anonymous && note.user_info && (
@@ -439,11 +465,21 @@ const NoteDetail = () => {
         </div>
         
         <div className="d-flex justify-content-end">
-          {note.tags && note.tags.map(tag => (
-            <button key={tag.tag_id} type="button" className="btn btn-outline-primary m-1">
-              {tag.name}
-            </button>
-          ))}
+          {note.tags && note.tags.map(tag => {
+            const tagName = typeof tag === 'object' ? tag.name : tag;
+            const buttonStyle = getTagColor(tagName);
+            
+            return (
+              <button 
+                key={tag.tag_id || tag} 
+                type="button" 
+                className="btn m-1"
+                style={buttonStyle}
+              >
+                {tagName}
+              </button>
+            );
+          })}
         </div>
         
         <div className="mb-3">
@@ -466,7 +502,7 @@ const NoteDetail = () => {
         <div>
           <p className="text-center"> Comentarios ({comments.length})</p>
           {comments.map((comment) => (
-            <div key={comment.comment_id} className="card mb-3">
+            <div key={comment.comment_id} className="card mb-3 comment-card">
               <div className="card-body">
                 <div className="d-flex justify-content-between align-items-start mb-2">
                   <h6 className="card-subtitle text-muted ">
