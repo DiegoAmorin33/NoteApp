@@ -13,7 +13,7 @@ import LoginForm from "./pages/LoginForm";
 import Profile from "./pages/Profile"; // ✅ Importación corregida
 import Favorites from "./pages/Favorites";
 import Contact from "./components/Contact";
-
+import AboutUs from "./components/AboutUs";
 export const router = createBrowserRouter(
 
     createRoutesFromElements(
@@ -36,6 +36,7 @@ export const router = createBrowserRouter(
         <Route path="/noteDetail/:id" element={<NoteDetail />} /> {/* ⚡ Corregido */}
         <Route path="/favorites" element={<Favorites />}/>
         <Route path="/contact" element={<Contact />}/>
+        <Route path="/about" element={<AboutUs />} />
         </Route>
     )
 

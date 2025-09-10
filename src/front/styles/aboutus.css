@@ -1,0 +1,73 @@
+.aboutus-container {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  overflow: hidden;
+  padding: 2rem;
+}
+
+/* Fondo con logo difuminado */
+.aboutus-container::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: url("../assets/img/logo-pequeño.png") no-repeat bottom right;
+  background-size: 25%;
+  opacity: 0.08;
+  pointer-events: none;
+  z-index: 0;
+}
+
+/* Overlay oscuro */
+.overlay {
+  position: relative;
+  z-index: 1;
+  width: 90%;
+  max-width: 900px;
+  padding: 2rem;
+  border-radius: 12px;
+  background: rgba(0, 0, 0, 0.85);
+  color: #ffffff;
+  line-height: 1.6;
+}
+
+/* Título principal */
+.title {
+  text-align: center;
+  font-size: 2.2rem;
+  margin-bottom: 2rem;
+  color: #ff7f11;
+}
+
+/* Secciones */
+.section {
+  margin-bottom: 1.8rem;
+}
+
+.section h3 {
+  font-size: 1.4rem;
+  margin-bottom: 0.8rem;
+  color: #6edb8f;
+}
+
+/* Lista de valores */
+.values-list {
+  list-style: none;
+  padding-left: 0;
+}
+
+.values-list li {
+  background: rgba(255, 255, 255, 0.07);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  padding: 0.8rem;
+  border-radius: 8px;
+  margin-bottom: 0.6rem;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.values-list li:hover {
+  transform: scale(1.02);
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.35);
+}
