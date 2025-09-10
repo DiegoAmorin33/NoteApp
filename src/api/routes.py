@@ -446,6 +446,38 @@ def update_user_bio():
 
     return jsonify({"message": "Bio actualizada exitosamente", "bio": user.bio}), 200
 
+
+@api.route('/profile/remove-picture', methods=['DELETE'])
+@jwt_required()
+def remove_profile_picture():
+    current_user_id = get_jwt_identity()
+    user = User.query.get(current_user_id)
+
+    if not user:
+        return jsonify({"error": "Usuario no encontrado"}), 404
+
+    if not user.profile_image_url:
+        return jsonify({"error": "No hay foto de perfil para eliminar"}), 400
+
+    # Optional: Delete the physical file from the server
+    try:
+        base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+        upload_folder = os.path.join(base_dir, 'src', 'front', 'assets', 'img', 'ProfilePictures')
+        file_path = os.path.join(upload_folder, user.profile_image_url)
+        
+        if os.path.exists(file_path):
+            os.remove(file_path)
+            print(f"✅ Physical file deleted: {file_path}")
+    except Exception as e:
+        print(f"⚠️ Could not delete physical file: {str(e)}")
+        # Continue anyway, as the main goal is to remove from database
+
+    # Remove from database
+    user.profile_image_url = None
+    db.session.commit()
+
+    return jsonify({"message": "Foto de perfil eliminada exitosamente"}), 200
+
 # MAIN NUEVO ENDPOINT: para actualizar un comentario
 
 

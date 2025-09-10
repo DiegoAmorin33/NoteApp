@@ -11,7 +11,10 @@ export const Home = () => {
   const [error, setError] = useState(null);
   const [userVotes, setUserVotes] = useState({});
   const [sortOption, setSortOption] = useState("recent"); // 'recent', 'voted', 'commented'
+  const [searchTerm, setSearchTerm] = useState("");
+  const [activeSearchTerm, setActiveSearchTerm] = useState("");
   const navigate = useNavigate();
+
 
   const backendUrl = "https://bookish-chainsaw-v6ww997qw5ppf5j-3001.app.github.dev/";
 
@@ -46,7 +49,7 @@ export const Home = () => {
       const token = localStorage.getItem("token");
       if (token) {
         try {
-          const votePromises = data.map(note =>
+          const votePromises = data.map((note) =>
             getUserVoteForNote(note.note_id || note.id)
           );
 
@@ -75,11 +78,14 @@ export const Home = () => {
     if (!token) return 0;
 
     try {
-      const response = await fetch(`${backendUrl}api/votes/my-vote?note_id=${noteId}`, {
-        headers: {
-          'Authorization': `Bearer ${token}`
+      const response = await fetch(
+        `${backendUrl}api/votes/my-vote?note_id=${noteId}`,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
         }
-      });
+      );
 
       if (response.status === 401) {
         handleTokenExpired();
@@ -107,15 +113,15 @@ export const Home = () => {
 
     try {
       const response = await fetch(`${backendUrl}api/vote`, {
-        method: 'POST',
+        method: "POST",
         headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
         },
         body: JSON.stringify({
           note_id: noteId,
-          vote_type: voteType
-        })
+          vote_type: voteType,
+        }),
       });
 
       if (response.status === 401) {
@@ -126,13 +132,13 @@ export const Home = () => {
       }
 
       if (response.ok) {
-        setUserVotes(prev => ({
+        setUserVotes((prev) => ({
           ...prev,
-          [noteId]: prev[noteId] === voteType ? 0 : voteType
+          [noteId]: prev[noteId] === voteType ? 0 : voteType,
         }));
 
-        setNotes(prevNotes =>
-          prevNotes.map(note => {
+        setNotes((prevNotes) =>
+          prevNotes.map((note) => {
             if (note.note_id === noteId || note.id === noteId) {
               const currentPositive = note.positive_votes || 0;
               const currentNegative = note.negative_votes || 0;
@@ -141,20 +147,34 @@ export const Home = () => {
               if (currentUserVote === voteType) {
                 return {
                   ...note,
-                  positive_votes: voteType === 1 ? Math.max(0, currentPositive - 1) : currentPositive,
-                  negative_votes: voteType === -1 ? Math.max(0, currentNegative - 1) : currentNegative
+                  positive_votes:
+                    voteType === 1
+                      ? Math.max(0, currentPositive - 1)
+                      : currentPositive,
+                  negative_votes:
+                    voteType === -1
+                      ? Math.max(0, currentNegative - 1)
+                      : currentNegative,
                 };
               } else if (currentUserVote === -voteType) {
                 return {
                   ...note,
-                  positive_votes: voteType === 1 ? currentPositive + 1 : Math.max(0, currentPositive - 1),
-                  negative_votes: voteType === -1 ? currentNegative + 1 : Math.max(0, currentNegative - 1)
+                  positive_votes:
+                    voteType === 1
+                      ? currentPositive + 1
+                      : Math.max(0, currentPositive - 1),
+                  negative_votes:
+                    voteType === -1
+                      ? currentNegative + 1
+                      : Math.max(0, currentNegative - 1),
                 };
               } else {
                 return {
                   ...note,
-                  positive_votes: voteType === 1 ? currentPositive + 1 : currentPositive,
-                  negative_votes: voteType === -1 ? currentNegative + 1 : currentNegative
+                  positive_votes:
+                    voteType === 1 ? currentPositive + 1 : currentPositive,
+                  negative_votes:
+                    voteType === -1 ? currentNegative + 1 : currentNegative,
                 };
               }
             }
@@ -173,7 +193,7 @@ export const Home = () => {
 
   // --- FAVORITOS ---
   const isNoteFavorited = (noteId) => {
-    return store.favorites.some(fav => (fav.note_id || fav.id) === noteId);
+    return store.favorites.some((fav) => (fav.note_id || fav.id) === noteId);
   };
 
   const toggleFavorite = async (note) => {
@@ -198,7 +218,7 @@ export const Home = () => {
   const truncateText = (text, maxLength = 150) => {
     if (!text) return "";
     if (text.length <= maxLength) return text;
-    return text.substring(0, maxLength) + '...';
+    return text.substring(0, maxLength) + "...";
   };
 
   const formatDate = (dateString) => {
@@ -253,10 +273,19 @@ export const Home = () => {
     );
   }
 
+  // Filtrar notas por término de búsqueda activo
+  const filteredNotes = notes.filter((note) => {
+    if (!activeSearchTerm.trim()) return true;
+    const title = (note.title || "").toLowerCase();
+    return title.includes(activeSearchTerm.toLowerCase());
+  });
+
   // Creamos el array ordenado según la opción seleccionada
-  const sortedNotes = [...notes].sort((a, b) => {
+  const sortedNotes = [...filteredNotes].sort((a, b) => {
     if (sortOption === "recent") {
-      return new Date(b.created_at || b.date) - new Date(a.created_at || a.date);
+      return (
+        new Date(b.created_at || b.date) - new Date(a.created_at || a.date)
+      );
     }
     if (sortOption === "voted") {
       const votesA = (a.positive_votes || 0) - (a.negative_votes || 0);
@@ -269,6 +298,16 @@ export const Home = () => {
     return 0;
   });
 
+  const handleSearch = (e) => {
+    e.preventDefault();
+    setActiveSearchTerm(searchTerm);
+  };
+
+  const clearSearch = () => {
+    setSearchTerm("");
+    setActiveSearchTerm("");
+  };
+
   return (
     <div className="container mt-4">
       <div className="row mb-4">
@@ -276,16 +315,23 @@ export const Home = () => {
           <div className="d-flex justify-content-between align-items-center">
             <h1 className="h2">Notas de la Comunidad</h1>
             <span className="badge bg-secondary">
-              {notes.length} {notes.length === 1 ? 'nota' : 'notas'}
+              {activeSearchTerm
+                ? `${sortedNotes.length} de ${notes.length}`
+                : notes.length}{" "}
+              {notes.length === 1 ? "nota" : "notas"}
             </span>
           </div>
-          <p className="text-muted">Descubre lo que la comunidad está compartiendo</p>
+          <p className="text-muted">
+            Descubre lo que la comunidad está compartiendo
+          </p>
         </div>
       </div>
 
       {/* Filtro de ordenamiento */}
       <div className="mb-3 d-flex align-items-center gap-2">
-        <label htmlFor="sortSelect" className="fw-semibold">Ordenar por:</label>
+        <label htmlFor="sortSelect" className="fw-semibold">
+          Ordenar por:
+        </label>
         <select
           id="sortSelect"
           className="form-select w-auto"
@@ -298,26 +344,88 @@ export const Home = () => {
         </select>
       </div>
 
-      <form className="form-inline my-2 my-lg-0">
-        <input className="form-control mr-sm-2" type="search" placeholder="Buscar tags" aria-label="Search" />
-        <button className="btn btn-outline-success my-2 my-sm-0" type="submit">Buscar</button>
-      </form>
+      {/* Barra de búsqueda */}
+      <div className="mb-3">
+        <form
+          onSubmit={handleSearch}
+          className="d-flex gap-2"
+          style={{ maxWidth: "400px" }}
+        >
+          <input
+            className="form-control form-control-sm"
+            type="search"
+            placeholder="Buscar en títulos de notas..."
+            aria-label="Search"
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+          />
+          <button className="btn btn-outline-primary btn-sm" type="submit">
+            <i className="fas fa-search"></i>
+          </button>
+          {activeSearchTerm && (
+            <button
+              className="btn btn-outline-secondary btn-sm"
+              type="button"
+              onClick={clearSearch}
+            >
+              Limpiar
+            </button>
+          )}
+        </form>
+        {activeSearchTerm && (
+          <small className="text-muted mt-1 d-block">
+            Mostrando {sortedNotes.length} resultado
+            {sortedNotes.length !== 1 ? "s" : ""} para "{activeSearchTerm}"
+          </small>
+        )}
+      </div>
 
       {sortedNotes.length === 0 ? (
         <div className="text-center py-5">
           <div className="mb-4">
             <i className="fas fa-sticky-note fa-4x text-muted"></i>
           </div>
-          <h3 className="text-muted">No hay notas todavía</h3>
-          <p className="text-muted">Sé el primero en compartir algo con la comunidad</p>
-          <Link to="/" className="btn btn-primary">Crear primera nota</Link>
+          {activeSearchTerm ? (
+            <>
+              <h3 className="text-muted">No se encontraron notas</h3>
+              <p className="text-muted">
+                No hay notas que coincidan con "{activeSearchTerm}"
+              </p>
+              <button className="btn btn-outline-primary" onClick={clearSearch}>
+                Ver todas las notas
+              </button>
+            </>
+          ) : (
+            <>
+              <h3 className="text-muted">No hay notas todavía</h3>
+              <p className="text-muted">
+                Sé el primero en compartir algo con la comunidad
+              </p>
+              <Link to="/" className="btn btn-primary">
+                Crear primera nota
+              </Link>
+            </>
+          )}
         </div>
       ) : (
         <div className="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-4">
           {sortedNotes.map((note) => (
             <div key={note.note_id || note.id} className="col">
-              <div className="card h-100 shadow-sm d-flex flex-column">
-                <div className="card-body d-flex flex-column">
+              <div className="card h-100 shadow-sm d-flex flex-column" style={{
+                              width: "100%",
+                              maxWidth: "24rem",
+                              transition: "transform 0.2s, box-shadow 0.2s",
+                            }}
+                            onMouseEnter={(e) => {
+                              e.currentTarget.style.transform = "translateY(-5px)";
+                              e.currentTarget.style.boxShadow = "0 4px 15px rgba(0,0,0,0.2)";
+                            }}
+                            onMouseLeave={(e) => {
+                              e.currentTarget.style.transform = "translateY(0)";
+                              e.currentTarget.style.boxShadow = "0 1px 3px rgba(0,0,0,0.12)";
+                            }}
+>
+                <div className="card-body d-flex flex-column ">
                   <div className="d-flex justify-content-between align-items-start mb-2">
                     <h5 className="card-title text-truncate" title={note.title}>
                       {note.title || "Sin título"}
@@ -327,7 +435,9 @@ export const Home = () => {
                     )}
                   </div>
 
-                  <p className="card-text text-muted">{truncateText(note.content)}</p>
+                  <p className="card-text text-muted">
+                    {truncateText(note.content)}
+                  </p>
 
                   {note.tags && note.tags.length > 0 && (
                     <div className="mb-3">
@@ -336,9 +446,9 @@ export const Home = () => {
                           <span
                             key={index}
                             className="badge bg-primary"
-                            style={{ fontSize: '0.75rem' }}
+                            style={{ fontSize: "0.75rem" }}
                           >
-                            {typeof tag === 'object' ? tag.name : tag}
+                            {typeof tag === "object" ? tag.name : tag}
                           </span>
                         ))}
                       </div>
@@ -358,7 +468,7 @@ export const Home = () => {
                           {note.user.username ||
                             (note.user.first_name && note.user.last_name
                               ? `${note.user.first_name} ${note.user.last_name}`
-                              : 'Usuario')}
+                              : "Usuario")}
                         </small>
                       </div>
                     )}
@@ -378,16 +488,28 @@ export const Home = () => {
                     <div className="d-flex gap-2 align-items-center">
                       {/* Botón Favoritos */}
                       <button
-                        className={`btn btn-sm ${isNoteFavorited(note.note_id || note.id) ? 'btn-warning' : 'btn-outline-warning'}`}
+                        className={`btn btn-sm ${
+                          isNoteFavorited(note.note_id || note.id)
+                            ? "btn-warning"
+                            : "btn-outline-warning"
+                        }`}
                         onClick={() => toggleFavorite(note)}
-                        title={isNoteFavorited(note.note_id || note.id) ? "Quitar de favoritos" : "Agregar a favoritos"}
+                        title={
+                          isNoteFavorited(note.note_id || note.id)
+                            ? "Quitar de favoritos"
+                            : "Agregar a favoritos"
+                        }
                       >
                         <i className="fas fa-star"></i>
                       </button>
 
                       {/* Botón Voto positivo */}
                       <button
-                        className={`btn btn-sm ${userVotes[note.note_id || note.id] === 1 ? 'btn-success' : 'btn-outline-success'}`}
+                        className={`btn btn-sm ${
+                          userVotes[note.note_id || note.id] === 1
+                            ? "btn-success"
+                            : "btn-outline-success"
+                        }`}
                         onClick={() => handleVote(note.note_id || note.id, 1)}
                         title="Votar positivamente"
                       >
@@ -397,7 +519,11 @@ export const Home = () => {
 
                       {/* Botón Voto negativo */}
                       <button
-                        className={`btn btn-sm ${userVotes[note.note_id || note.id] === -1 ? 'btn-danger' : 'btn-outline-danger'}`}
+                        className={`btn btn-sm ${
+                          userVotes[note.note_id || note.id] === -1
+                            ? "btn-danger"
+                            : "btn-outline-danger"
+                        }`}
                         onClick={() => handleVote(note.note_id || note.id, -1)}
                         title="Votar negativamente"
                       >
