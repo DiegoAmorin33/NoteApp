@@ -27,7 +27,7 @@
   max-width: 900px;
   padding: 2rem;
   border-radius: 12px;
-  background: rgba(0, 0, 0, 0.85); /* un poco más opaco */
+  background: rgba(0, 0, 0, 0.85); 
   z-index: 1;
 }
 

@@ -186,17 +186,32 @@
 .navbar-custom .navbar-link:hover {
   color: #f97316; /* Naranja del logo */
 }
+
+
 /* ====== Footer ====== */
 .footer-custom {
   background-color: #ffffff; /* Igual que navbar */
   color: #0d1b2a;
   box-shadow: 0 -2px 6px rgba(0,0,0,0.1); /* Sombra superior */
   width: 100%;
+  height: 60px;              /* altura fija */
+  display: flex;
+  align-items: center;
+}
+
+.footer-container {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  width: 100%;
+  padding: 0 16px;           /* solo padding horizontal */
+  height: 100%;              /* para heredar la altura fija */
 }
 
 .footer-custom p {
   font-weight: 500;
   color: #0d1b2a;
+  margin: 0;
 }
 
 .footer-custom .footer-link {
@@ -209,3 +224,67 @@
 .footer-custom .footer-link:hover {
   color: #f97316; /* Naranja del logo */
 }
+
+/* pagina de favoritos */
+.favorites-page {
+  min-height: 100vh;        
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-start;
+  padding-bottom: 80px;     
+}
+
+/* Página de favoritos */
+.favorites-page {
+  min-height: 100vh;       /* Siempre ocupa toda la pantalla */
+  display: flex;
+  flex-direction: column;
+  padding-bottom: 80px;    /* espacio para footer */
+  background-color: #f9fafb; /* gris muy claro para contrastar */
+}
+
+/* Título */
+.favorites-page h2 {
+  font-weight: 600;
+  color: #0d1b2a; /* azul oscuro del navbar/footer */
+}
+
+/* Tarjetas de notas */
+.favorites-page .card {
+  background: #ffffff;
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  border-radius: 12px;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.favorites-page .card:hover {
+  transform: translateY(-4px); /* se levanta un poquito */
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.12);
+}
+
+/* Título de la nota */
+.favorites-page .card-title {
+  font-size: 1rem;
+  font-weight: 600;
+  color: #0d1b2a;
+}
+
+/* Texto */
+.favorites-page .card-text {
+  font-size: 0.9rem;
+  color: #4a5568; /* gris medio */
+}
+
+/* Botón */
+.favorites-page .btn-outline-primary {
+  border-color: #f97316;  /* naranja de tu logo */
+  color: #f97316;
+  font-weight: 500;
+  transition: all 0.2s ease;
+}
+
+.favorites-page .btn-outline-primary:hover {
+  background-color: #f97316;
+  color: #fff;
+}
+

@@ -3,8 +3,7 @@ import { Link } from "react-router-dom";
 
 export const Footer = () => (
   <footer className="footer-custom">
-    <div className="container d-flex justify-content-between align-items-center py-3">
-      
+    <div className="container footer-container">
       {/* Copyright */}
       <p className="m-0">© 2025 Noted</p>
 

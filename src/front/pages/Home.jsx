@@ -13,7 +13,7 @@ export const Home = () => {
   const [sortOption, setSortOption] = useState("recent"); // 'recent', 'voted', 'commented'
   const navigate = useNavigate();
 
-  const backendUrl = "https://urban-capybara-pj9px5q65gx72r5jw-3001.app.github.dev/";
+  const backendUrl = "https://bookish-chainsaw-v6ww997qw5ppf5j-3001.app.github.dev/";
 
   useEffect(() => {
     fetchNotes();

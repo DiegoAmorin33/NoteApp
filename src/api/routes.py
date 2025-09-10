@@ -721,7 +721,7 @@ def google_login():
                 first_name=first_name,
                 last_name=last_name,
                 username=email.split('@')[0],
-                password_hash="",  # vacío porque no se usará
+                password_hash="",  # vacío porque no se usa
                 is_active=True
             )
             db.session.add(user)
