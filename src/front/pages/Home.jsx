@@ -410,9 +410,6 @@ export const Home = () => {
               <p className="text-muted">
                 Sé el primero en compartir algo con la comunidad
               </p>
-              <Link to="/" className="btn btn-primary">
-                Crear primera nota
-              </Link>
             </>
           )}
         </div>

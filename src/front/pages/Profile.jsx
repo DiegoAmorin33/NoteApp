@@ -568,7 +568,7 @@ const Profile = () => {
                                 }
                               }}
                             >
-                              Guardar Imagen
+                              Cargar imagen
                             </button>
                           )}
                         </div>
@@ -647,9 +647,6 @@ const Profile = () => {
                       <p className="text-muted">
                         ¡Crea tu primera nota y compártela con la comunidad!
                       </p>
-                      <Link to="/" className="btn btn-primary">
-                        Crear primera nota
-                      </Link>
                     </div>
                   ) : (
                     <div className="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-4">
