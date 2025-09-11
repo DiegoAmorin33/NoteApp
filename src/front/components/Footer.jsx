@@ -11,6 +11,7 @@ export const Footer = () => (
       <div className="d-flex gap-3">
         <Link to="/" className="footer-link">Home</Link>
         <Link to="/contact" className="footer-link">Contactanos</Link>
+        <Link to="/about" className="nav-link footer-link">Sobre nosotros</Link>
       </div>
     </div>
   </footer>
